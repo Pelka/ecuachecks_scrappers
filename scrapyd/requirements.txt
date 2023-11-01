@@ -1,0 +1,2 @@
+scrapyd==1.4.3
+logparser==0.8.2

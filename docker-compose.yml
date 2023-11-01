@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+  scrapyd:
+    build: ./scrapyd/
+    ports:
+      - "6800:6800"
+    volumes:
+      - scrapyd-volume:/scrapyd:Z
+  scrapydweb:
+    build: ./scrapydweb/
+    depends_on:
+      - scrapyd
+    links:
+      - scrapyd
+    ports:
+      - "5000:5000"
+    environment:
+      - SCRAPYD_SERVERS=scrapyd
+
+volumes:
+  scrapyd-volume:
