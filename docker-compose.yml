@@ -17,6 +17,7 @@ services:
       - "5000:5000"
     environment:
       - SCRAPYD_SERVERS=scrapyd
+    restart: unless-stopped
 
 volumes:
   scrapyd-volume:
