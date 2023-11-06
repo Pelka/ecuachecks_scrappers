@@ -1,23 +1,55 @@
-version: "3"
+version: '3.3'
 
 services:
-  scrapyd:
-    build: ./scrapyd/
-    ports:
-      - "6800:6800"
-    volumes:
-      - scrapyd-volume:/scrapyd:Z
-  scrapydweb:
-    build: ./scrapydweb/
-    depends_on:
-      - scrapyd
-    links:
-      - scrapyd
-    ports:
-      - "5000:5000"
+  master:
+    image: crawlabteam/crawlab
+    container_name: crawlab_master
+    restart: always
     environment:
-      - SCRAPYD_SERVERS=scrapyd
-    restart: unless-stopped
+      CRAWLAB_NODE_MASTER: "Y"  # Y: master node
+      CRAWLAB_MONGO_HOST: "mongo"  # mongo host address. In the docker compose network, directly refer to the service name
+      CRAWLAB_MONGO_PORT: "27017"  # mongo port 
+      CRAWLAB_MONGO_DB: "crawlab"  # mongo database 
+      CRAWLAB_MONGO_USERNAME: "ecuachecks"  # mongo username
+      CRAWLAB_MONGO_PASSWORD: "OswZh3o1iYf8"  # mongo password 
+      CRAWLAB_MONGO_AUTHSOURCE: "admin"  # mongo auth source 
+    volumes:
+      - crawlab-metadata:/opt/.crawlab/master:/root/.crawlab  # persistent crawlab metadata
+      - crawlab-data:/opt/crawlab/master:/data  # persistent crawlab data
+      - logs:/var/crawlab/log:/var/logs/crawlab # log persistent 
+    ports:
+      - "8080:8080"  # exposed api port
+    depends_on:
+      - mongo
+
+  worker:
+    image: crawlabteam/crawlab
+    container_name: crawlab_worker
+    restart: always
+    environment:
+      CRAWLAB_NODE_MASTER: "master"  # N: worker node
+      CRAWLAB_GRPC_ADDRESS: "master:9666"  # grpc address
+      CRAWLAB_FS_FILER_URL: "http://master:8080/api/filer"  # seaweedfs api
+    volumes:
+      - crawlab-metadata:/opt/.crawlab/worker:/root/.crawlab  # persistent crawlab metadata
+      - worker-data:/opt/crawlab/worker:/data  
+
+  mongo:
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "ecuachecks"  # mongo username
+      MONGO_INITDB_ROOT_PASSWORD: "OswZh3o1iYf8"  # mongo password
+    volumes:
+      - crawlab-metadata:/opt/.crawlab/master:/root/.crawlab  # persistent crawlab metadata
+      - db:/opt/crawlab/mongo/data/db:/data/db  # persistent mongo data
+    ports:
+      - "27017:27017"  # expose mongo port to host machine
+
 
 volumes:
-  scrapyd-volume:
+  crawlab-data:
+  crawlab-metadata:
+  worker-data:
+  db:
+  logs:
