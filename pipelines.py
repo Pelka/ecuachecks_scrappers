@@ -1,24 +1,19 @@
 import re
 from typing import (
-    List,
-)
+    List, )
 from decimal import (
-    Decimal,
-)
+    Decimal, )
 from datetime import (
-    datetime,
-)
+    datetime, )
 
 # useful for handling different item types with a single interface
 from itemadapter import (
-    ItemAdapter,
-)
+    ItemAdapter, )
 
 
 # process fields
-def process_fields(
-    item_adapter: ItemAdapter, fields_key: List[str], func: any, *args, **kwargs
-):
+def process_fields(item_adapter: ItemAdapter, fields_key: List[str], func: any,
+                   *args, **kwargs):
     for field_key in fields_key:
         value = item_adapter.get(field_key)
         if value is not None:
@@ -26,9 +21,7 @@ def process_fields(
 
 
 # data formating & cleaning functions
-def strip_white_spaces(
-    item_adapter: ItemAdapter,
-):
+def strip_white_spaces(item_adapter: ItemAdapter, ):
     field_names = item_adapter.field_names()
     for field_name in field_names:
         value = item_adapter.get(field_name)
@@ -36,11 +29,11 @@ def strip_white_spaces(
             item_adapter[field_name] = value.strip()
 
 
-def capitalize_words(
-    value,
-):
+def capitalize_words(value, ):
     words = value.split()
-    capitalized_words = [word.capitalize() if len(word) > 1 else word for word in words]
+    capitalized_words = [
+        word.capitalize() if len(word) > 1 else word for word in words
+    ]
     value = ' '.join(capitalized_words)
     return value
 
@@ -97,6 +90,7 @@ def string_to_decimal(
 
 # spiders pipelines
 class DPPAntPipeline:
+
     def process_item(
         self,
         item,
@@ -133,6 +127,7 @@ class DPPAntPipeline:
 
 
 class DPPSriPipeline:
+
     def process_item(
         self,
         item,

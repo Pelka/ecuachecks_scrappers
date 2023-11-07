@@ -42,6 +42,12 @@ class AntSpider(Spider):
                     .split("-")[-1]
                     .strip()
                 )
+                ant_item["license_type"] = (
+                    record.root
+                    .split('/')[0]
+                    .split(':')[-1]
+                    .split('&')[0].strip()
+                )
                 ant_item["expedition_date"] = (
                     record.root
                     .split("VALIDEZ:")[-1]
