@@ -1,117 +1,208 @@
-import time
-from pprint import pprint
-from lxml import html
-from selenium import webdriver
+from typing import Optional
+from pydantic import BaseModel, field_validator, Field
+
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+from fake_useragent import UserAgent
 import undetected_chromedriver as uc
 from undetected_chromedriver import ChromeOptions
+
+from selectolax.parser import HTMLParser, Node
 from twocaptcha import TwoCaptcha
 
-# --- Init config
-# user_input = input("Enter ID: ")  # 1721194593 1709026718
-search_id = '1709822207'
-url = 'https://www.senescyt.gob.ec/consulta-titulos-web/faces/vista/consulta/consulta.xhtml;jsessionid=Fa3JjYFGiorrF4sr7TZQvZEKkMCJeLLQfYKjq8lS.srvprouioct26'
 
-options = ChromeOptions()
-service = Service()
+class Degree(BaseModel):
+    title: str
+    college: Optional[str]
+    certificate_type: Optional[str]
+    recognized: Optional[str]
+    register_num: Optional[str]
+    register_date: Optional[str]
+    area: Optional[str]
+    note: Optional[str]
 
-# options.add_argument('--headless')
-# options.add_argument('--disable-gpu')
+    @field_validator('*')
+    @classmethod
+    def strip_strings(cls, V: any) -> str:
+        return V.strip() if isinstance(V, str) else V
 
-driver = webdriver.Chrome(
-    service=service,
-    # use_subprocess=True,
-    # options=options,
-)
+    @field_validator('title', 'college', 'area', 'recognized', 'note')
+    @classmethod
+    def capitalize_words(cls, V: str | None):
+        if V is not None:
+            words = V.split()
+            capitalized_words = [
+                word.capitalize() if len(word) > 1 else word for word in words
+            ]
+            V = ' '.join(capitalized_words)
+            return V
+        else:
+            return V
 
-driver.get(url)
 
-wait = WebDriverWait(driver, timeout=10)
+class EducationProfile(BaseModel):
+    id_number: str
+    full_name: str
+    gender: str
+    nacionality: str
+    degress: list[Degree] = Field(default_factory=list)
 
-img = wait.until(
-    EC.presence_of_element_located(
-        (By.CSS_SELECTOR, 'img[id="formPrincipal:capimg"]')
-    )
-).get_attribute("src")
+    @field_validator('*')
+    @classmethod
+    def strip_strings(cls, V: any) -> str:
+        return V.strip() if isinstance(V, str) else V
 
-solver = TwoCaptcha("331b57cff358c0e42f3529ab52c8409b")
+    @field_validator('gender', 'nacionality')
+    @classmethod
+    def capitalize_words(cls, V: str):
+        if V is not None:
+            words = V.split()
+            capitalized_words = [
+                word.capitalize() if len(word) > 1 else word for word in words
+            ]
+            V = ' '.join(capitalized_words)
+            return V
+        else:
+            return V
 
-result = {}
 
-try:
-    result = solver.normal(img)
-    print("Response: ", result)
-except Exception as e:
-    print("Error:", str(e))
+class SenescytSpider:
+    def __init__(self, search_id: str):
+        self.search_id = search_id
+        self.target_url = "https://www.senescyt.gob.ec/consulta-titulos-web/faces/vista/consulta/consulta.xhtml;jsessionid=Fa3JjYFGiorrF4sr7TZQvZEKkMCJeLLQfYKjq8lS.srvprouioct26"
+        self.options = self._set_chrome_arguments([
+            "--headless",
+            "--disable-gpu",
+            f"--user-agent='{UserAgent().chrome}'",
+        ])
+        self.driver = self._init_driver(self.options)
+        self.driver.implicitly_wait(10)
 
-if result.get("code", ""):
-    wait.until(
-        EC.presence_of_element_located(
-            (By.CSS_SELECTOR, 'input[id="formPrincipal:identificacion"]')
+    def _set_chrome_arguments(self, arguments):
+        chrome_options = ChromeOptions()
+        for argument in arguments:
+            chrome_options.add_argument(argument)
+        return chrome_options
+
+    def _init_driver(self, options):
+        service = Service()
+        return uc.Chrome(
+            service=service,
+            use_subprocess=True,
+            options=options
         )
-    ).send_keys(search_id)
 
-    wait.until(
-        EC.presence_of_element_located(
-            (By.CSS_SELECTOR, 'input[id="formPrincipal:captchaSellerInput"]')
+    def _captcha_solver(self, img_src):
+        solver = TwoCaptcha("331b57cff358c0e42f3529ab52c8409b")
+        result = {}
+
+        try:
+            result = solver.normal(img_src)
+            print("Response:", result)
+        except Exception as e:
+            raise e
+
+        return result
+
+    def _wait_for_element(self, selector, timeout=10, by=By.CSS_SELECTOR):
+        return WebDriverWait(self.driver, timeout).until(
+            EC.presence_of_element_located((by, selector))
         )
-    ).send_keys(result.get("code"))
 
-    driver.find_element(
-        By.CSS_SELECTOR, 'button[id="formPrincipal:boton-buscar"]'
-    ).send_keys(Keys.ENTER)
+    def get_html(self):
+        self.driver.get(self.target_url)
 
-    driver.implicitly_wait(7)
+        img = self._wait_for_element(
+            'img[id="formPrincipal:capimg"]').get_attribute("src")
 
-    response = driver.page_source
+        result = self._captcha_solver(img)
 
-    driver.implicitly_wait(7)
+        try:
+            if result.get('code', ''):
+                self._wait_for_element(
+                    'input[id="formPrincipal:identificacion"]'
+                ).send_keys(self.search_id)
 
-    data = html.fromstring(response)
+                self._wait_for_element(
+                    'input[id="formPrincipal:captchaSellerInput"]'
+                ).send_keys(result.get("code"))
 
-    titles = data.xpath(
-        '//div[contains(@id,"pnlListaTitulos") and contains(@class,"panel")]')
+                self.driver.find_element(
+                    By.CSS_SELECTOR, 'button[id="formPrincipal:boton-buscar"]'
+                ).send_keys(Keys.ENTER)
 
-    if titles:
-        for record in titles:
-            table_data = record.xpath('.//tbody')[0]
-            records = table_data.xpath(
-                './/*[@id="formPrincipal_pnlInfoPersonalcontent"]//tbody')
+                try:
+                    self._wait_for_element('formPrincipal:j_idt39', 20, By.ID)
+                except:
+                    resp_msg = "Error"
+                else:
+                    resp_msg = "Ok"
 
-            print(html.tostring(records, pretty_print=True).decode("utf-8"))
+                resp_data = HTMLParser(self.driver.page_source)
 
-            # print(html.tostring(records.xpath(
-            #     './/td[label[contains(., "Nombres:")]]/following-sibling::td/label/text()')))
+                return (resp_msg, resp_data)
+            else:
+                raise Exception("Failed captcha")
 
-            # senescyt_item = {}
+        except:
+            raise Exception("Couldn't interact with the page")
 
-            # senescyt_item["full_name"] = records.xpath(
-            #     '//td[label[contains(., "Nombres:")]]/following-sibling::td/label/text()')[0].text
-            # senescyt_item["cedula"] = records.xpath(
-            #     './/td[label[contains(text(),"Identificación")]]/following-sibling::td/label/text()').get("")
-            # senescyt_item["gender"] = records.xpath(
-            #     './/td[label[contains(text(),"Género")]]/following-sibling::td/label/text()').get("")
-            # senescyt_item["nationality"] = records.xpath(
-            #     './/td[label[contains(text(),"Nacionalidad")]]/following-sibling::td/label/text()').get("")
-            # senescyt_item["degree"] = table_data.xpath(
-            #     './/td[span[contains(text(),"Título")]]/text()').get("")
-            # senescyt_item["college"] = table_data.xpath(
-            #     './/td[span[contains(text(),"Institución de Educación Superior")]]/text()').get("")
-            # senescyt_item["certificate_type"] = table_data.xpath(
-            #     './/td[span[contains(text(),"Tipo")]]/text()').get("")
-            # senescyt_item["recognized"] = table_data.xpath(
-            #     './/td[span[contains(text(),"Reconocido Por")]]/text()').get("")
-            # senescyt_item["register_number"] = table_data.xpath(
-            #     './/td[span[contains(text(),"Número de Registro")]]/text()').get("")
-            # senescyt_item["register_date"] = table_data.xpath(
-            #     './/td[span[contains(text(),"Fecha de Registro")]]/text()').get("")
-            # senescyt_item["area"] = table_data.xpath(
-            #     './/td[span[contains(text(),"Área o Campo de Conocimiento")]]/text()').get("")
-            # senescyt_item["note"] = table_data.xpath(
-            #     './/td[span[contains(text(),"Observación")]]/text()').get("")
+        finally:
+            self.driver.quit()
 
-            # pprint(senescyt_item)
+    def parse_error(self, tree: HTMLParser):
+        err_msg = tree.css_first('.msg-rojo').text().strip()
+        raise Exception(err_msg)
+
+    def parse_data(self, tree: HTMLParser):
+
+        def get_text_safe(element: Node | None):
+            return element.next.text() if element and element.next else ''
+
+        personal_data = tree.css(
+            'div#formPrincipal_pnlInfoPersonalcontent td.ui-panelgrid-cell.grid-left label')
+
+        item = EducationProfile(
+            id_number=personal_data[0].text(),
+            full_name=personal_data[1].text(),
+            gender=personal_data[2].text(),
+            nacionality=personal_data[3].text(),
+        )
+
+        degrees_tree = tree.css('div[id*="pnlListaTitulos"][class*="panel"]')
+
+        if degrees_tree:
+            for panel in degrees_tree:
+                degree_raw = panel.css_first('tbody')
+                degree_data = degree_raw.css('td span')
+
+                sub_item = Degree(
+                    title=get_text_safe(degree_data[0]),
+                    college=get_text_safe(degree_data[1]),
+                    certificate_type=get_text_safe(degree_data[2]),
+                    recognized=get_text_safe(degree_data[3]),
+                    register_num=get_text_safe(degree_data[4]),
+                    register_date=get_text_safe(degree_data[5]),
+                    area=get_text_safe(degree_data[6]),
+                    note=get_text_safe(degree_data[7]),
+                )
+
+                item.degress.append(sub_item)
+
+        return item
+
+
+if __name__ == "__main__":
+    spider = SenescytSpider(search_id="1721194593")
+    status, data = spider.get_html()
+
+    if status == "Ok":
+        item = spider.parse_data(data)
+    else:
+        item = spider.parse_error(data)
+
+    print(item)
