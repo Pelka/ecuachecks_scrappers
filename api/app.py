@@ -1,9 +1,13 @@
-from robyn import Robyn
-from robyn.robyn import Request, jsonify
 import json
 import asyncio
 import aiohttp
 import uuid
+
+from robyn import Robyn
+from robyn.robyn import Request, jsonify
+
+# TODO: handle data
+# TODO: add auth
 
 app = Robyn(__file__)
 
@@ -102,7 +106,8 @@ async def scrappers_run(request: Request):
         results = await asyncio.gather(*query_tasks)
 
     scp_tasks[task_id] = {
-        "remaining_tasks": len(results),
+        "total_tasks": len(targets),
+        "remaining_tasks": len(targets),
         "scp_list": []
     }
 
@@ -117,7 +122,7 @@ async def scrappers_run(request: Request):
 
         scp_tasks[task_id]["scp_list"].append(scp_data)
 
-    return jsonify({"status": "Ok", "id": task_id})
+    return jsonify({"status": "Ok", "id": task_id, "data": scp_tasks[task_id]})
 
 
 @app.get("/scrappers/status/:id")
