@@ -38,7 +38,7 @@ async def start_scrapping_task(session: aiohttp.ClientSession, search_id: str, t
     if target == "ant" or target == "sri":
         payload = {"param": f"search_id={search_id}"}
     else:
-        payload = {"param": scrapper_id}
+        payload = {"param": f"--search_id {search_id}"}
 
     async with session.post(url, headers=headers, json=payload) as response:
         response = await response.text()
