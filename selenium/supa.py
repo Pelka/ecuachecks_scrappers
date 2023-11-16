@@ -197,6 +197,7 @@ def run(search_id: str):
 @command()
 @option('--search_id', '-s', help="The id (cedula) to scrape")
 def cli(search_id):
+    # Search ID  # 1709026718 404:1721194593
     run(search_id)
 
 

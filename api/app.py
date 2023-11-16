@@ -13,7 +13,8 @@ app = Robyn(__file__)
 
 scrappers = {
     "sri": "65498bddf8bd10ca1328ed83",
-    "ant": "65498c25f8bd10ca1328ed85"
+    "ant": "65498c25f8bd10ca1328ed85",
+    "supa": "65556093f8bd10ca1328ef2c"
 }
 
 scp_tasks = {}
