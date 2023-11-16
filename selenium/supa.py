@@ -1,5 +1,4 @@
-from seleniumwire import webdriver
-from selenium.webdriver.chrome.service import Service
+# Selenium and related imports
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.webelement import WebElement
@@ -7,13 +6,17 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 import undetected_chromedriver as uc
 
+# Third-party libraries for enhanced web scraping
 from selectolax.parser import HTMLParser
 from fake_useragent import UserAgent
 from selenium_stealth import stealth
+
+# Data handling and utility tools
 from typing import Generator
 from dataclasses import dataclass, asdict
-
 from pprint import pprint
+
+# CLI tools and custom modules
 from click import command, option
 import crawlab
 
@@ -37,10 +40,10 @@ class SupaItem:
 
 
 def setup_driver():
-    # Configuraciones de undetected_chromedriver para evitar la detección
+    # Settings of undetected_chromedriver to avoid detection
     USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
 
-    options = webdriver.ChromeOptions()
+    options = uc.ChromeOptions()
     options.add_argument('--headless=new')
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_argument('--disable-extensions')
@@ -62,10 +65,11 @@ def setup_driver():
         },
     }
 
-    # Crear el driver con las opciones
-    driver = webdriver.Chrome(
+    # Setup driver
+    driver = uc.Chrome(
         options=options,
-        seleniumwire_options=wire_options
+        seleniumwire_options=wire_options,
+        version_main=106
     )
 
     driver.execute_script(

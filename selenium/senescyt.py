@@ -1,257 +1,235 @@
-# develop library
-from pprint import pprint
-
-# Data processing
-from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, field_validator, Field
-from crawlab import save_item
-
-# Selenium
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.keys import Keys
+# Selenium and related imports
+from seleniumwire import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
-
-# Utils for webscraping
-from fake_useragent import UserAgent
+from selenium.webdriver.common.keys import Keys
 import undetected_chromedriver as uc
-from undetected_chromedriver import ChromeOptions
+
+# Third-party libraries for enhanced web scraping
+from selectolax.parser import HTMLParser, Node
+from fake_useragent import UserAgent
+from selenium_stealth import stealth
 from twocaptcha import TwoCaptcha
 
-# Html parser
-from selectolax.parser import HTMLParser, Node
+# Data handling and utility tools
+from dataclasses import dataclass, asdict, field
+from pprint import pprint
 
-# CLI commands
+# CLI tools and custom modules
 from click import command, option
+import crawlab
 
 
-# Data handlers
-class PPDModel(BaseModel):
-    """
-    The PPDModel class provides common data cleaning operations for all fields string fields.
-
-    Methods:
-        strip_strings(v: Any): Strips whitespace from string values for all fields.
-        capitalize_words(v: Optional[str]): Capitalizes the first letter of each word in string values for all fields.
-    """
-
-    @field_validator('*')
-    @classmethod
-    def strip_strings(cls, value: any) -> any:
-        """
-        Strips whitespace from string if `value` is a string, otherwise returns `value` unchanged.
-        """
-        return value.strip() if isinstance(value, str) else value
-
-    @classmethod
-    def capitalize_words(cls, value: str) -> str:
-        """
-        Capitalizes the first letter of each word in a string if `value` is a string.
-        """
-        words = value.split()
-        capitalized_words = [word.capitalize() if len(
-            word) > 1 else word for word in words]
-        return ' '.join(capitalized_words)
-
-    @classmethod
-    def string_to_datetime(cls, value: str, date_format: str) -> datetime:
-        """
-        Converts a string to a datetime object according to the specified format.
-        """
-        return datetime.strptime(value, date_format)
-
-
-class Degree(PPDModel):
+@dataclass
+class DegreeItem:
     title: str
-    college: Optional[str]
-    certificate_type: Optional[str]
-    recognized: Optional[str]
-    register_num: Optional[str]
-    register_date: datetime
-    area: Optional[str]
-    note: Optional[str]
-
-    @field_validator('title', 'college', 'area', 'recognized', 'note')
-    @classmethod
-    def capitalize_words(cls, value: str) -> str:
-        return super().capitalize_words(value)
-
-    @field_validator('register_date', mode="before")
-    @classmethod
-    def string_to_datetime(cls, value: str) -> datetime:
-        return super().string_to_datetime(value, "%Y-%m-%d")
+    college: str
+    type: str
+    recognized: str
+    register_num: str
+    register_date: str
+    area: str
+    note: str
 
 
-class EducationProfile(PPDModel):
+@dataclass
+class SenescytItem:
     id_number: str
     full_name: str
     gender: str
     nacionality: str
-    degress: list[Degree] = Field(default_factory=list)
-
-    @field_validator('gender', 'nacionality')
-    def capitalize_words(cls, V: str):
-        return super().capitalize_words(V)
+    degress: list[DegreeItem] = field(default_factory=list)
 
 
-class SenescytSpider:
-    def __init__(self, search_id: str):
-        # Test id: 1721194593 1709026718 1709822207
-        self.search_id = search_id
-        self.target_url = "https://www.senescyt.gob.ec/consulta-titulos-web/faces/vista/consulta/consulta.xhtml;jsessionid=Fa3JjYFGiorrF4sr7TZQvZEKkMCJeLLQfYKjq8lS.srvprouioct26"
-        self.driver = self._setup_driver()
+PROXY_HTTP = "http://customer-ecuachecks-cc-ec-sessid-0519303614-sesstime-5:Ecuachecks2023@pr.oxylabs.io:7777"
+PROXY_HTTPS = "https://customer-ecuachecks-cc-ec-sessid-0519303614-sesstime-5:Ecuachecks2023@pr.oxylabs.io:7777"
 
-    @classmethod
-    def start_from_cli(cls, search_id: str):
-        spider = cls(search_id)
-        status, data = spider.get_html()
 
-        if status == "Ok":
-            item = spider.parse_data(data)
-            save_item(item.model_dump(mode='json'))
-            pprint(item.model_dump())
-        else:
-            spider.parse_error(data)
+def setup_driver():
+    # Settings of undetected_chromedriver to avoid detection
+    USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
 
-    def _setup_driver(self):
-        # Setting Chrome options
-        options = ChromeOptions()
-        options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-gpu")
-        options.add_argument('--disable-dev-shm-usage')
+    options = uc.ChromeOptions()
+    options.add_argument('--headless=new')
+    options.add_argument('--disable-blink-features=AutomationControlled')
+    options.add_argument('--disable-extensions')
+    options.add_argument('--disable-popup-blocking')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-plugins-discovery')
+    options.add_argument('--incognito')
+    options.add_argument('--profile-directory=Default')
+    options.add_argument('--start-maximized')
+    options.add_argument('--no-sandbox')
+    options.add_argument(f'user-agent={USER_AGENT}')
+    options.set_capability("acceptInsecureCerts", True)
+    wire_options = {
+        'connection_timeout': None,  # Wait forever for the connection to start
+        'connection_keep_alive': True,  # Use connection keep-alive
+        'proxy': {
+            'http': PROXY_HTTP,
+            'https': PROXY_HTTPS
+        },
+    }
 
-        # Fake user agent
-        ua = UserAgent().random
-        options.add_argument(f"--user-agent={ua}")
+    # Setup driver
+    driver = uc.Chrome(
+        options=options,
+        seleniumwire_options=wire_options,
+        version_main=106
+    )
 
-        # Setting up ChromeDriver
-        service = Service(
-            executable_path=ChromeDriverManager().install()
-        )
+    driver.execute_script(
+        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-        driver = uc.Chrome(
-            service=service,
-            use_subprocess=False,
-            options=options,
-            # version_main=106
-        )
+    stealth(
+        driver,
+        user_agent=USER_AGENT,
+        languages=["es-EC", "es"],
+        vendor="Google Inc.",
+        platform="Win32",
+        webgl_vendor="Intel Inc.",
+        renderer="Intel Iris OpenGL Engine",
+        fix_hairline=True,
+    )
 
-        # Setting implitly wait time
-        driver.implicitly_wait(10)
-        return driver
+    return driver
 
-    def _captcha_solver(self, img_src):
-        solver = TwoCaptcha("331b57cff358c0e42f3529ab52c8409b")
-        result = {}
 
-        try:
-            result = solver.normal(img_src)
-            print("Response:", result)
-        except Exception as e:
-            raise e
+def captcha_solver(img_src):
+    solver = TwoCaptcha("331b57cff358c0e42f3529ab52c8409b")
+    result = {}
 
-        return result
+    try:
+        result = solver.normal(img_src, proxy={
+            'type': 'HTTP',
+            'uri': PROXY_HTTP
+        })
+        print("Response:", result)
+    except Exception as e:
+        raise e
 
-    def _wait_for_page_load(self, timeout: int = 10):
-        WebDriverWait(self.driver, timeout).until(
-            lambda d: d.execute_script(
-                'return document.readyState') == 'complete'
-        )
+    return result
 
-    def get_html(self):
-        self.driver.get(self.target_url)
 
-        self._wait_for_page_load()
+def wait_until_page_load(driver: uc.Chrome, timeout=10.0):
+    WebDriverWait(driver, timeout).until(
+        lambda d: d.execute_script(
+            'return document.readyState') == 'complete'
+    )
 
-        img = self.driver.find_element(
+
+def wait_for_element(driver: uc.Chrome, by: str, locator: str, timeout=10):
+    return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, locator)))
+
+
+def error_handler(tree: HTMLParser):
+    try:
+        e_msg = tree.css_first('.msg-rojo').text(strip=True)
+    except:
+        e_msg = tree.css_first('.ui-messages-error').text()
+
+    raise Exception(e_msg)
+
+
+def get_html(driver: uc.Chrome, search_id: str):
+    URL = "http://www.senescyt.gob.ec/consulta-titulos-web/faces/vista/consulta/consulta.xhtml;jsessionid=Fa3JjYFGiorrF4sr7TZQvZEKkMCJeLLQfYKjq8lS.srvprouioct26"
+
+    try:
+        driver.get(URL)
+
+        wait_until_page_load(driver)
+
+        img = driver.find_element(
             By.CSS_SELECTOR, 'img[id="formPrincipal:capimg"]'
         ).get_attribute("src")
 
-        result = self._captcha_solver(img)
+        result = captcha_solver(img)
 
         if not result.get('code', ''):
             raise Exception("Failed captcha")
 
-        self.driver.find_element(
+        driver.find_element(
             By.CSS_SELECTOR, 'input[id="formPrincipal:identificacion"]'
-        ).send_keys(self.search_id)
+        ).send_keys(search_id)
 
-        self.driver.find_element(
+        driver.find_element(
             By.CSS_SELECTOR, 'input[id="formPrincipal:captchaSellerInput"]'
         ).send_keys(result.get('code'))
 
-        self.driver.find_element(
+        driver.find_element(
             By.CSS_SELECTOR, 'button[id="formPrincipal:boton-buscar"]'
         ).send_keys(Keys.ENTER)
 
-        self._wait_for_page_load()
+        wait_until_page_load(driver)
+
+        tree = HTMLParser(driver.page_source)
 
         try:
-            self.driver.find_element(
+            driver.find_element(
                 By.XPATH, '//div[contains(@id,"pnlListaTitulos") and contains(@class,"panel")]')
         except:
-            resp_msg = "Error"
-        else:
-            resp_msg = "Ok"
+            error_handler(tree)
 
-        resp_data = HTMLParser(self.driver.page_source)
-        self.driver.quit()
+        return tree
 
-        return (resp_msg, resp_data)
+    finally:
+        driver.quit()
 
-    def parse_error(self, tree: HTMLParser):
-        try:
-            err_msg = tree.css_first('.msg-rojo').text()
-        except:
-            err_msg = tree.css_first('.ui-messages-error').text()
-        raise Exception(err_msg)
 
-    def parse_data(self, tree: HTMLParser):
+def parse_data(tree: HTMLParser):
+    def get_text_safe(element: Node | None):
+        return element.next.text() if element and element.next else ''
 
-        def get_text_safe(element: Node | None):
-            return element.next.text() if element and element.next else ''
+    personal_data = tree.css(
+        'div#formPrincipal_pnlInfoPersonalcontent td.ui-panelgrid-cell.grid-left label')
 
-        personal_data = tree.css(
-            'div#formPrincipal_pnlInfoPersonalcontent td.ui-panelgrid-cell.grid-left label')
+    item = SenescytItem(
+        id_number=personal_data[0].text(),
+        full_name=personal_data[1].text(),
+        gender=personal_data[2].text(),
+        nacionality=personal_data[3].text(),
+    )
 
-        item = EducationProfile(
-            id_number=personal_data[0].text(),
-            full_name=personal_data[1].text(),
-            gender=personal_data[2].text(),
-            nacionality=personal_data[3].text(),
-        )
+    degrees_tree = tree.css('div[id*="pnlListaTitulos"][class*="panel"]')
 
-        degrees_tree = tree.css('div[id*="pnlListaTitulos"][class*="panel"]')
+    if degrees_tree:
+        for panel in degrees_tree:
+            degree_raw = panel.css_first('tbody')
+            degree_data = degree_raw.css('td span')
 
-        if degrees_tree:
-            for panel in degrees_tree:
-                degree_raw = panel.css_first('tbody')
-                degree_data = degree_raw.css('td span')
+            sub_item = DegreeItem(
+                title=get_text_safe(degree_data[0]),
+                college=get_text_safe(degree_data[1]),
+                type=get_text_safe(degree_data[2]),
+                recognized=get_text_safe(degree_data[3]),
+                register_num=get_text_safe(degree_data[4]),
+                register_date=get_text_safe(degree_data[5]),
+                area=get_text_safe(degree_data[6]),
+                note=get_text_safe(degree_data[7]),
+            )
 
-                sub_item = Degree(
-                    title=get_text_safe(degree_data[0]),
-                    college=get_text_safe(degree_data[1]),
-                    certificate_type=get_text_safe(degree_data[2]),
-                    recognized=get_text_safe(degree_data[3]),
-                    register_num=get_text_safe(degree_data[4]),
-                    register_date=get_text_safe(degree_data[5]),
-                    area=get_text_safe(degree_data[6]),
-                    note=get_text_safe(degree_data[7]),
-                )
+            item.degress.append(sub_item)
 
-                item.degress.append(sub_item)
+    pprint(asdict(item))
+    crawlab.save_item(asdict(item))
 
-        return item
+
+def run(search_id: str):
+    driver = setup_driver()
+    html = get_html(driver, search_id)
+    parse_data(html)
 
 
 @command()
 @option('--search_id', '-s', help="The id (cedula) to scrape")
 def cli(search_id):
-    SenescytSpider.start_from_cli(search_id)
+    run(search_id)
 
 
 cli()
+
+# if __name__ == "__main__":
+#     # 1721194593 1709026718 1709822207
+#     run("1709822207")
