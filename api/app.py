@@ -14,7 +14,8 @@ app = Robyn(__file__)
 scrappers = {
     "sri": "65498bddf8bd10ca1328ed83",
     "ant": "65498c25f8bd10ca1328ed85",
-    "supa": "65556093f8bd10ca1328ef2c"
+    "supa": "65556093f8bd10ca1328ef2c",
+    "senescyt": "654e575cf8bd10ca1328ee31"
 }
 
 scp_tasks = {}
@@ -34,7 +35,10 @@ async def start_scrapping_task(session: aiohttp.ClientSession, search_id: str, t
         'Authorization': API_TOKEN,
         'Content-Type': 'application/json'
     }
-    payload = {"param": f"search_id={search_id}"}
+    if target == "ant" or target == "sri":
+        payload = {"param": f"search_id={search_id}"}
+    else:
+        payload = {"param": scrapper_id}
 
     async with session.post(url, headers=headers, json=payload) as response:
         response = await response.text()
