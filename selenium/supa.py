@@ -10,7 +10,30 @@ import undetected_chromedriver as uc
 from selectolax.parser import HTMLParser
 from fake_useragent import UserAgent
 from selenium_stealth import stealth
-import time
+from typing import Generator
+from dataclasses import dataclass, asdict
+
+from pprint import pprint
+from click import command, option
+import crawlab
+
+
+@dataclass
+class SupaItem:
+    province: str
+    jurisdictional_depency: str
+    card_code: str
+    judicial_process: str
+    type_alimony: str
+    current_payment: str
+    legal_representative: str
+    primary_obligator: str
+    n_pending_alimony: str
+    subtotal_alimony_payments: str
+    subtotal_alimony_interest: str
+    total_alimony_payint: str
+    n_other_debts: str
+    total_other_debts: str
 
 
 def setup_driver():
@@ -18,7 +41,7 @@ def setup_driver():
     USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
 
     options = webdriver.ChromeOptions()
-    # options.add_argument('--headless=new')
+    options.add_argument('--headless=new')
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_argument('--disable-extensions')
     options.add_argument('--disable-popup-blocking')
@@ -59,8 +82,6 @@ def setup_driver():
         fix_hairline=True,
     )
 
-    driver.implicitly_wait(3)
-
     return driver
 
 
@@ -74,7 +95,7 @@ def wait_for_element(driver: uc.Chrome, by: str, locator: str, timeout=10):
     return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, locator)))
 
 
-def parse_html(driver: uc.Chrome, search_id: str) -> HTMLParser:
+def get_html(driver: uc.Chrome, search_id: str) -> Generator[HTMLParser, any, None]:
     URL = "https://supa.funcionjudicial.gob.ec/pensiones/publico/consulta.jsf"
 
     try:
@@ -87,6 +108,7 @@ def parse_html(driver: uc.Chrome, search_id: str) -> HTMLParser:
             By.CSS_SELECTOR, 'button[id="form:b_buscar_cedula"]'
         ).send_keys(Keys.ENTER)
 
+        driver.implicitly_wait(5)
         wait_until_page_load(driver)
 
         try:
@@ -100,12 +122,10 @@ def parse_html(driver: uc.Chrome, search_id: str) -> HTMLParser:
         )
 
         for record in elements:
-            parse_table(driver, record)
+            yield HTMLParser(parse_table(driver, record))
 
     finally:
         driver.quit()
-
-    return HTMLParser(str_html)
 
 
 def parse_table(driver: uc.Chrome, element: WebElement):
@@ -113,14 +133,17 @@ def parse_table(driver: uc.Chrome, element: WebElement):
 
     wait_until_page_load(driver)
 
+    first_node = HTMLParser(driver.page_source)\
+        .css_first('div[id="form:dDetalle"] tr')
+
     driver.find_element(
         By.CSS_SELECTOR, 'button[id="form:ta_co_movimientosPendientes"]'
     ).click()
 
     wait_until_page_load(driver)
 
-    with open("parsed_html", "a") as file:
-        file.write(driver.page_source)
+    second_node = HTMLParser(driver.page_source)\
+        .css_first('div[id="form:d_pendientes"]')
 
     driver.find_element(
         By.CSS_SELECTOR, 'button[id="form:ta_co_cerrarPendientes"]'
@@ -132,11 +155,49 @@ def parse_table(driver: uc.Chrome, element: WebElement):
         By.CSS_SELECTOR, 'button[id="form:j_idt136"]'
     ).click()
 
+    html = first_node.html + second_node.html
 
-def run():
+    return html
+
+
+def parse_data(html: Generator[HTMLParser, any, None]):
+    for tree in html:
+        general_data = tree.css('.tabla-columna-datos')
+        table = tree.css_first('div[id="form:j_idt183"] + table')
+        debts_data = table.css('td:nth-child(2), td:nth-child(5)')
+
+        item = SupaItem(
+            province=general_data[0].text(strip=True),
+            jurisdictional_depency=general_data[1].text(strip=True),
+            card_code=general_data[2].text(strip=True),
+            judicial_process=general_data[3].text(strip=True),
+            type_alimony=general_data[4].text(strip=True),
+            current_payment=general_data[5].text(strip=True),
+            legal_representative=general_data[6].text(strip=True),
+            primary_obligator=general_data[8].text(strip=True),
+            n_pending_alimony=debts_data[0].text(strip=True),
+            subtotal_alimony_payments=debts_data[1].text(strip=True),
+            subtotal_alimony_interest=debts_data[2].text(strip=True),
+            total_alimony_payint=debts_data[3].text(strip=True),
+            n_other_debts=debts_data[4].text(strip=True),
+            total_other_debts=debts_data[7].text(strip=True)
+        )
+
+        pprint(asdict(item))
+
+        crawlab.save_item(asdict(item))
+
+
+def run(search_id: str):
     driver = setup_driver()
-    parse_html(driver, "1709026718")
+    html = get_html(driver, search_id)
+    parse_data(html)
 
 
-if __name__ == "__main__":
-    run()
+@command()
+@option('--search_id', '-s', help="The id (cedula) to scrape")
+def cli(search_id):
+    run(search_id)
+
+
+cli()
