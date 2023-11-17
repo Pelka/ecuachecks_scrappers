@@ -59,7 +59,6 @@ def setup_driver():
     options.add_argument('--disable-plugins-discovery')
     options.add_argument('--incognito')
     options.add_argument('--profile-directory=Default')
-    options.add_argument('--start-maximized')
     options.add_argument('--no-sandbox')
     options.add_argument(f'user-agent={USER_AGENT}')
     wire_options = {
@@ -116,10 +115,6 @@ def wait_until_page_load(driver: uc.Chrome, timeout=10.0):
         lambda d: d.execute_script(
             'return document.readyState') == 'complete'
     )
-
-
-def wait_for_element(driver: uc.Chrome, by: str, locator: str, timeout=10):
-    return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, locator)))
 
 
 def error_handler(tree: HTMLParser):

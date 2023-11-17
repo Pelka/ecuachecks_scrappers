@@ -52,9 +52,8 @@ def setup_driver():
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_argument('--incognito')
     options.add_argument('--profile-directory=Default')
-    options.add_argument('--start-maximized')
     options.add_argument('--no-sandbox')
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('excludeSwitches', ['enable-automation'])
     options.add_experimental_option('useAutomationExtension', False)
     options.add_argument(f'user-agent={USER_AGENT}')
 

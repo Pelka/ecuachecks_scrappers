@@ -56,7 +56,6 @@ def setup_driver():
     options.add_argument('--disable-plugins-discovery')
     options.add_argument('--incognito')
     options.add_argument('--profile-directory=Default')
-    options.add_argument('--start-maximized')
     options.add_argument('--no-sandbox')
     options.add_argument(f'user-agent={USER_AGENT}')
 
@@ -73,7 +72,7 @@ def setup_driver():
     driver = uc.Chrome(
         options=options,
         seleniumwire_options=wire_options,
-        version_main=106
+        # version_main=106
     )
 
     driver.execute_script(
@@ -93,35 +92,22 @@ def setup_driver():
     return driver
 
 
-def wait_until_page_load(driver: uc.Chrome):
-    WebDriverWait(driver, timeout=10).until_not(EC.presence_of_element_located((
-        By.CSS_SELECTOR, 'div[id="j_idt350_modal"]'
-    )))
-
-
-def wait_for_element(driver: uc.Chrome, by: str, locator: str, timeout=10):
-    return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, locator)))
-
-
 def get_html(driver: uc.Chrome, search_id: str) -> Generator[HTMLParser, any, None]:
 
     try:
         driver.get(URL)
 
-        wait_for_element(
-            driver, By.CSS_SELECTOR, 'input[id="form:t_texto_cedula"]'
+        driver.find_element(
+            By.CSS_SELECTOR, 'input[id="form:t_texto_cedula"]'
         ).send_keys(search_id)
 
         driver.find_element(
             By.CSS_SELECTOR, 'button[id="form:b_buscar_cedula"]'
         ).send_keys(Keys.ENTER)
 
-        driver.implicitly_wait(5)
-        wait_until_page_load(driver)
-
         try:
-            driver.find_element(
-                By.XPATH, '//td[contains(@role,"gridcell") and button]/button')
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located(
+                (By.XPATH, '//td[contains(@role,"gridcell") and button]/button')))
         except:
             raise Exception("Not Found D:")
 
@@ -137,41 +123,36 @@ def get_html(driver: uc.Chrome, search_id: str) -> Generator[HTMLParser, any, No
 
 
 def parse_table(driver: uc.Chrome, element: WebElement):
+    wait = WebDriverWait(driver, 10)
+
     element.find_element(By.CSS_SELECTOR, ".ui-button.ui-widget").click()
 
-    wait_until_page_load(driver)
-
-    first_node = HTMLParser(driver.page_source)\
-        .css_first('div[id="form:dDetalle"] tr')
-
-    driver.find_element(
-        By.CSS_SELECTOR, 'button[id="form:ta_co_movimientosPendientes"]'
+    wait.until(EC.element_to_be_clickable(
+        (By.CSS_SELECTOR, 'button[id="form:ta_co_movimientosPendientes"]'))
     ).click()
 
-    wait_until_page_load(driver)
+    c_btn = wait.until(EC.element_to_be_clickable(
+        (By.CSS_SELECTOR, 'button[id="form:ta_co_cerrarPendientes"]')
+    ))
 
-    second_node = HTMLParser(driver.page_source)\
-        .css_first('div[id="form:d_pendientes"]')
+    source = driver.page_source
 
-    driver.find_element(
-        By.CSS_SELECTOR, 'button[id="form:ta_co_cerrarPendientes"]'
-    ).click()
+    c_btn.click()
 
-    wait_until_page_load(driver)
+    wait.until(EC.element_to_be_clickable(
+        (By.CSS_SELECTOR, '.ui-dialog-footer.ui-widget-content span button:last-child')
+    )).click()
 
-    driver.find_element(
-        By.CSS_SELECTOR, 'button[id="form:j_idt136"]'
-    ).click()
-
-    html = first_node.html + second_node.html
-
-    return html
+    return source
 
 
-def parse_data(html: Generator[HTMLParser, any, None]):
-    for tree in html:
-        general_data = tree.css('.tabla-columna-datos')
-        table = tree.css_first('div[id="form:j_idt183"] + table')
+def parse_data(parser: Generator[HTMLParser, any, None]):
+    for tree in parser:
+        general_data = tree.css(
+            'div[id="form:dDetalle"] tr .tabla-columna-datos')
+        table = tree.css_first(
+            'div[id="form:d_pendientes"] .ui-dialog-content.ui-widget-content > table')
+
         debts_data = table.css('td:nth-child(2), td:nth-child(5)')
 
         item = SupaItem(
@@ -192,7 +173,7 @@ def parse_data(html: Generator[HTMLParser, any, None]):
         )
 
         dict_item = asdict(item)
-        crawlab.save_item(dict_item)
+        # crawlab.save_item(dict_item)
         pprint(dict_item)
 
 
