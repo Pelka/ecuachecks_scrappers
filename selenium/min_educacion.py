@@ -8,20 +8,18 @@ from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 
 # Third-party libraries for enhanced web scraping
-from selectolax.parser import HTMLParser, Node
+from selectolax.parser import HTMLParser
 from fake_useragent import UserAgent
 from selenium_stealth import stealth
 from twocaptcha import TwoCaptcha
 
 # Data handling and utility tools
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, asdict
 from pprint import pprint
 
 # CLI tools and custom modules
 from click import command, option
 import crawlab
-
-import time
 
 
 @dataclass
@@ -46,7 +44,7 @@ def setup_driver():
     options = webdriver.ChromeOptions()
     service = Service(ChromeDriverManager().install())
 
-    # options.add_argument('--headless=new')
+    options.add_argument('--headless=new')
     options.add_argument('--disable-extensions')
     options.add_argument('--disable-popup-blocking')
     options.add_argument('--disable-dev-shm-usage')
@@ -181,7 +179,7 @@ def parse_data(parser: HTMLParser):
             )
 
             dict_item = asdict(item)
-            # crawlab.save_item(dict_item)
+            crawlab.save_item(dict_item)
             pprint(dict_item)
     else:
         raise Exception("Not Found D:")
