@@ -20,6 +20,11 @@ from pprint import pprint
 from click import command, option
 import crawlab
 
+PROXY_HTTP = "http://customer-ecuachecks-cc-ec:Ecuachecks2023@pr.oxylabs.io:7777"
+PROXY_HTTPS = "https://customer-ecuachecks-cc-ec:Ecuachecks2023@pr.oxylabs.io:7777"
+USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
+URL = "https://supa.funcionjudicial.gob.ec/pensiones/publico/consulta.jsf"
+
 
 @dataclass
 class SupaItem:
@@ -41,7 +46,6 @@ class SupaItem:
 
 def setup_driver():
     # Settings of undetected_chromedriver to avoid detection
-    USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
 
     options = uc.ChromeOptions()
     options.add_argument('--headless=new')
@@ -60,8 +64,8 @@ def setup_driver():
         'connection_timeout': None,  # Wait forever for the connection to start
         'connection_keep_alive': True,  # Use connection keep-alive
         'proxy': {
-            'http': "http://customer-ecuachecks-cc-ec-sessid-0519303614-sesstime-5:Ecuachecks2023@pr.oxylabs.io:7777",
-            'https': "https://customer-ecuachecks-cc-ec-sessid-0519303614-sesstime-5:Ecuachecks2023@pr.oxylabs.io:7777"
+            'http': PROXY_HTTP,
+            'https': PROXY_HTTPS
         },
     }
 
@@ -100,7 +104,6 @@ def wait_for_element(driver: uc.Chrome, by: str, locator: str, timeout=10):
 
 
 def get_html(driver: uc.Chrome, search_id: str) -> Generator[HTMLParser, any, None]:
-    URL = "https://supa.funcionjudicial.gob.ec/pensiones/publico/consulta.jsf"
 
     try:
         driver.get(URL)

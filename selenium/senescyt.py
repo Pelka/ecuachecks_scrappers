@@ -19,6 +19,12 @@ from pprint import pprint
 from click import command, option
 import crawlab
 
+TWO_CAPTCHA_API_KEY = "331b57cff358c0e42f3529ab52c8409b"
+PROXY_HTTP = "http://customer-ecuachecks-cc-ec:Ecuachecks2023@pr.oxylabs.io:7777"
+PROXY_HTTPS = "https://customer-ecuachecks-cc-ec:Ecuachecks2023@pr.oxylabs.io:7777"
+USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
+URL = "http://www.senescyt.gob.ec/consulta-titulos-web/faces/vista/consulta/consulta.xhtml;jsessionid=Fa3JjYFGiorrF4sr7TZQvZEKkMCJeLLQfYKjq8lS.srvprouioct26"
+
 
 @dataclass
 class DegreeItem:
@@ -41,13 +47,8 @@ class SenescytItem:
     degress: list[DegreeItem] = field(default_factory=list)
 
 
-PROXY_HTTP = "http://customer-ecuachecks-cc-ec-sessid-0519303614-sesstime-5:Ecuachecks2023@pr.oxylabs.io:7777"
-PROXY_HTTPS = "https://customer-ecuachecks-cc-ec-sessid-0519303614-sesstime-5:Ecuachecks2023@pr.oxylabs.io:7777"
-
-
 def setup_driver():
     # Settings of undetected_chromedriver to avoid detection
-    USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
 
     options = uc.ChromeOptions()
     options.add_argument('--headless=new')
@@ -95,7 +96,7 @@ def setup_driver():
 
 
 def captcha_solver(img_src):
-    solver = TwoCaptcha("331b57cff358c0e42f3529ab52c8409b")
+    solver = TwoCaptcha(TWO_CAPTCHA_API_KEY)
     result = {}
 
     try:
@@ -131,7 +132,6 @@ def error_handler(tree: HTMLParser):
 
 
 def get_html(driver: uc.Chrome, search_id: str):
-    URL = "http://www.senescyt.gob.ec/consulta-titulos-web/faces/vista/consulta/consulta.xhtml;jsessionid=Fa3JjYFGiorrF4sr7TZQvZEKkMCJeLLQfYKjq8lS.srvprouioct26"
 
     try:
         driver.get(URL)

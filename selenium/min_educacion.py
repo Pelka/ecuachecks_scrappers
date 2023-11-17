@@ -21,6 +21,11 @@ from pprint import pprint
 from click import command, option
 import crawlab
 
+TWO_CAPTCHA_API_KEY = "331b57cff358c0e42f3529ab52c8409b"
+USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
+PROXY = "https://customer-ecuachecks-cc-ec:Ecuachecks2023@pr.oxylabs.io:7777"
+URL = "https://servicios.educacion.gob.ec/titulacion25-web/faces/paginas/consulta-titulos-refrendados.xhtml"
+
 
 @dataclass
 class MinEducacionItem:
@@ -32,11 +37,6 @@ class MinEducacionItem:
     speciality: str
     graduation_date: str
     ref_number: str
-
-
-PROXY = "https://customer-ecuachecks-cc-ec:Ecuachecks2023@pr.oxylabs.io:7777"
-URL = "https://servicios.educacion.gob.ec/titulacion25-web/faces/paginas/consulta-titulos-refrendados.xhtml"
-USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
 
 
 def setup_driver():
@@ -91,7 +91,7 @@ def setup_driver():
 
 
 def captcha_solver(img_src):
-    solver = TwoCaptcha("331b57cff358c0e42f3529ab52c8409b")
+    solver = TwoCaptcha(TWO_CAPTCHA_API_KEY)
     result = {}
 
     try:
