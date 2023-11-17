@@ -174,8 +174,8 @@ def parse_data(parser: HTMLParser):
                 college=data[3].text(strip=True),
                 degree=data[4].text(strip=True),
                 speciality=data[5].text(strip=True),
-                graduation_date=data[7].text(strip=True),
-                ref_number=data[8].text(strip=True),
+                graduation_date=data[6].text(strip=True),
+                ref_number=data[7].text(strip=True),
             )
 
             dict_item = asdict(item)
