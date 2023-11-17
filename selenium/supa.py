@@ -42,11 +42,12 @@ class SupaItem:
     total_alimony_payint: str
     n_other_debts: str
     total_other_debts: str
+    total: str
 
 
 def setup_driver():
-    # Settings of undetected_chromedriver to avoid detection
 
+    # Settings of undetected_chromedriver to avoid detection
     options = uc.ChromeOptions()
     options.add_argument('--headless=new')
     options.add_argument('--disable-blink-features=AutomationControlled')
@@ -72,7 +73,7 @@ def setup_driver():
     driver = uc.Chrome(
         options=options,
         seleniumwire_options=wire_options,
-        # version_main=106
+        version_main=106
     )
 
     driver.execute_script(
@@ -168,12 +169,13 @@ def parse_data(parser: Generator[HTMLParser, any, None]):
             subtotal_alimony_payments=debts_data[1].text(strip=True),
             subtotal_alimony_interest=debts_data[2].text(strip=True),
             total_alimony_payint=debts_data[3].text(strip=True),
-            n_other_debts=debts_data[4].text(strip=True),
-            total_other_debts=debts_data[7].text(strip=True)
+            total=debts_data[4].text(strip=True),
+            n_other_debts=debts_data[5].text(strip=True),
+            total_other_debts=debts_data[8].text(strip=True)
         )
 
         dict_item = asdict(item)
-        # crawlab.save_item(dict_item)
+        crawlab.save_item(dict_item)
         pprint(dict_item)
 
 
