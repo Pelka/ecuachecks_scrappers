@@ -1,8 +1,6 @@
 # Selenium and related imports
-from seleniumwire import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 import undetected_chromedriver as uc
@@ -63,7 +61,6 @@ def setup_driver():
     options.add_argument('--start-maximized')
     options.add_argument('--no-sandbox')
     options.add_argument(f'user-agent={USER_AGENT}')
-    options.set_capability("acceptInsecureCerts", True)
     wire_options = {
         'connection_timeout': None,  # Wait forever for the connection to start
         'connection_keep_alive': True,  # Use connection keep-alive
@@ -138,7 +135,6 @@ def get_html(driver: uc.Chrome, search_id: str):
 
     try:
         driver.get(URL)
-
         wait_until_page_load(driver)
 
         img = driver.find_element(
@@ -212,8 +208,9 @@ def parse_data(tree: HTMLParser):
 
             item.degress.append(sub_item)
 
-    pprint(asdict(item))
-    crawlab.save_item(asdict(item))
+    dict_item = asdict(item)
+    crawlab.save_item(dict_item)
+    pprint(dict_item)
 
 
 def run(search_id: str):
@@ -225,11 +222,11 @@ def run(search_id: str):
 @command()
 @option('--search_id', '-s', help="The id (cedula) to scrape")
 def cli(search_id):
+    # 1721194593 1709026718 1709822207
     run(search_id)
 
 
 cli()
 
 # if __name__ == "__main__":
-#     # 1721194593 1709026718 1709822207
 #     run("1709822207")

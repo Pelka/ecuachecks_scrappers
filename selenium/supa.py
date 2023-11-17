@@ -106,7 +106,8 @@ def get_html(driver: uc.Chrome, search_id: str) -> Generator[HTMLParser, any, No
         driver.get(URL)
 
         wait_for_element(
-            driver, By.CSS_SELECTOR, 'input[id="form:t_texto_cedula"]').send_keys(search_id)
+            driver, By.CSS_SELECTOR, 'input[id="form:t_texto_cedula"]'
+        ).send_keys(search_id)
 
         driver.find_element(
             By.CSS_SELECTOR, 'button[id="form:b_buscar_cedula"]'
@@ -187,9 +188,9 @@ def parse_data(html: Generator[HTMLParser, any, None]):
             total_other_debts=debts_data[7].text(strip=True)
         )
 
-        pprint(asdict(item))
-
-        crawlab.save_item(asdict(item))
+        dict_item = asdict(item)
+        crawlab.save_item(dict_item)
+        pprint(dict_item)
 
 
 def run(search_id: str):
