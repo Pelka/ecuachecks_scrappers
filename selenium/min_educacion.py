@@ -29,6 +29,7 @@ class MinEducacionItem:
     no: str
     id_number: str
     full_name: str
+    college: str
     degree: str
     speciality: str
     graduation_date: str
@@ -45,7 +46,7 @@ def setup_driver():
     options = webdriver.ChromeOptions()
     service = Service(ChromeDriverManager().install())
 
-    options.add_argument('--headless=new')
+    # options.add_argument('--headless=new')
     options.add_argument('--disable-extensions')
     options.add_argument('--disable-popup-blocking')
     options.add_argument('--disable-dev-shm-usage')
@@ -165,21 +166,22 @@ def parse_data(parser: HTMLParser):
     table_data = parser.css(
         'span[id="formBusqueda:tabla"] tbody.rf-dt-b tr')
 
-    if table_data[0].css_first("td.rf-dt-c"):
+    if table_data:
         for row in table_data:
             data = row.css("td.rf-dt-c")
             item = MinEducacionItem(
                 no=data[0].text(strip=True),
                 id_number=data[1].text(strip=True),
                 full_name=data[2].text(strip=True),
-                degree=data[3].text(strip=True),
-                speciality=data[4].text(strip=True),
-                graduation_date=data[5].text(strip=True),
-                ref_number=data[6].text(strip=True),
+                college=data[3].text(strip=True),
+                degree=data[4].text(strip=True),
+                speciality=data[5].text(strip=True),
+                graduation_date=data[7].text(strip=True),
+                ref_number=data[8].text(strip=True),
             )
 
             dict_item = asdict(item)
-            crawlab.save_item(dict_item)
+            # crawlab.save_item(dict_item)
             pprint(dict_item)
     else:
         raise Exception("Not Found D:")
