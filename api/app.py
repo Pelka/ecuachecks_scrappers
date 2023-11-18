@@ -15,7 +15,8 @@ scrappers = {
     "sri": "65498bddf8bd10ca1328ed83",
     "ant": "65498c25f8bd10ca1328ed85",
     "supa": "65556093f8bd10ca1328ef2c",
-    "senescyt": "654e575cf8bd10ca1328ee31"
+    "senescyt": "654e575cf8bd10ca1328ee31",
+    "min_educacion": "6557d002f8bd10ca1328f063"
 }
 
 scp_tasks = {}
@@ -69,7 +70,7 @@ async def update_scrapper_status(session: aiohttp.ClientSession, scp: dict):
         result = await get_scraper_status(session, scp["_id_crawlab"])
         scp["status"] = result["data"]["status"]
 
-    return 0 if scp["status"] == "finished" else 1
+    return 0 if scp["status"] == "finished" or scp["status"] == "error" else 1
 
 
 async def get_scraper_data(session: aiohttp.ClientSession, scp_task_id: str):
