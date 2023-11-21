@@ -99,10 +99,14 @@ def captcha_solver(img_src):
     result = {}
 
     try:
-        result = solver.normal(img_src, proxy={
-            'type': 'HTTP',
-            'uri': PROXY_HTTP
-        })
+        result = solver.normal(
+            img_src,
+            phrase=False,
+            caseSensitive=True,
+            minLen=6,
+            maxLen=6
+        )
+
         print("Response:", result)
     except Exception as e:
         raise e
