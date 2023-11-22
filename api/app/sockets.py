@@ -80,7 +80,7 @@ async def fetch_subtask_data(subtasks: list[ScpTask]) -> list[dict]:
         fetch_results = [
             asyncio.create_task(
                 set_type(session, subtask)
-            ) for subtask in subtasks if subtask.status is not "error"
+            ) for subtask in subtasks if subtask.status
         ]
 
         return await asyncio.gather(*fetch_results)
