@@ -72,12 +72,17 @@ async def update_subtasks_status(task: GlobalTask) -> list[ScpTask]:
 
 
 async def fetch_subtask_data(subtasks: list[ScpTask]) -> list[dict]:
+    async def set_type(session: aiohttp.ClientSession, subtask: ScpTask):
+        data = await crawlab_api.get_scrapper_data(session, subtask.id_crawlab)
+        return {"type": subtask.type, "data": data}
+
     async with aiohttp.ClientSession() as session:
         fetch_results = [
             asyncio.create_task(
-                crawlab_api.get_scrapper_data(session, subtask.id_crawlab)
+                set_type(session, subtask)
             ) for subtask in subtasks if subtask.status is not "error"
         ]
+
         return await asyncio.gather(*fetch_results)
 
 
