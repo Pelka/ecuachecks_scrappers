@@ -1,11 +1,23 @@
+# Async libraries
 import httpx
 import asyncio
-import json
+# Third-party libraries for enhanced web scraping
 from fake_useragent import UserAgent
-from dataclasses import dataclass
+# Data handling and utility tools
+import json
+import itertools
+from dataclasses import dataclass, asdict, field
 from pprint import pprint
+# CLI tools and custom modules
+from click import command, option
+import crawlab
 
 user_agent = UserAgent(os=["windows"], min_percentage=15.0)
+
+proxies = {
+    "http://": "http://customer-ecuachecks-cc-ec:Ecuachecks2023@pr.oxylabs.io:7777",
+    "https://": "https://customer-ecuachecks-cc-ec:Ecuachecks2023@pr.oxylabs.io:7777"
+}
 
 headers = {
     'Accept': 'application/json, text/plain, */*',
@@ -25,6 +37,39 @@ headers = {
 }
 
 
+@dataclass
+class ActivityItem:
+    entry_date: str
+    title: str
+    activity: str
+
+
+@dataclass
+class IncidentItem:
+    no_movement: str
+    entry_date: str
+    actors: list[str] = field(default_factory=str)
+    defendants: list[str] = field(default_factory=str)
+    activities: list[ActivityItem] = field(default_factory=list)
+
+
+@dataclass
+class MovementItem:
+    jurisdiction: str
+    city: str
+    incidents: list[IncidentItem] = field(default_factory=list)
+
+
+@dataclass
+class ExpelItem:
+    no_process: str
+    entry_date: str
+    matter: str
+    action_type: str
+    crime_issue: str
+    movements: list[MovementItem] = field(default_factory=list)
+
+
 async def post_api_data(client: httpx.AsyncClient, url: str, headers: dict, payload: dict):
     res = await client.post(url, headers=headers, content=payload)
     return res.json()
@@ -35,81 +80,118 @@ async def get_api_data(client: httpx.AsyncClient, url: str, headers: dict):
     return res.json()
 
 
-async def get_initial_query(client: httpx.AsyncClient, search_id: str):
-    url_process = "https://api.funcionjudicial.gob.ec/informacion/buscarCausas?page=1&size=30"
+async def get_initial_query(client: httpx.AsyncClient, search_id: str = None, search_name: str = None):
+    url = "https://api.funcionjudicial.gob.ec/informacion/buscarCausas?page=1&size=30"
 
-    payload_process = json.dumps({
+    temp_payload = {
         "numeroCausa": "",
-        "actor": {
-            "cedulaActor": search_id,
-            "nombreActor": ""
-        },
-        "demandado": {
-            "cedulaDemandado": "",
-            "nombreDemandado": ""
-        },
+        "actor": {},
+        "demandado": {},
         "provincia": "",
         "numeroFiscalia": "",
         "recaptcha": "verdad"
-    })
+    }
 
-    return await post_api_data(client, url_process, headers, payload_process)
+    payloads = [
+        (lambda d, k, v:
+            {**d, k: {f"{'cedula' if search_id else 'nombre'}{k.capitalize()}": v}})
+        (temp_payload, k, search_id) for k in ["actor", "demandado"]
+    ]
+
+    json_payloads = list(map(lambda x: json.dumps(x), payloads))
+
+    results = [
+        asyncio.create_task(post_api_data(client, url, headers, payload))
+        for payload in json_payloads
+    ]
+
+    results = await asyncio.gather(*results)
+    return list(itertools.chain(*results))
 
 
 async def parse_data(client: httpx.AsyncClient, processes: list[dict]):
-    url = "https://api.funcionjudicial.gob.ec/informacion/getIncidenteJudicatura/{}"
-    results = []
-
-    for processes in processes:
-        id_judgment = processes.get("idJuicio")
-        task = asyncio.create_task(
-            get_api_data(client, url.format(id_judgment), headers)
+    for process in processes:
+        id_judgment = process.get("idJuicio")
+        url = f"https://api.funcionjudicial.gob.ec/informacion/getInformacionJuicio/{id_judgment}"
+        result = await get_api_data(client, url, headers)
+        item = ExpelItem(
+            no_process=id_judgment,
+            entry_date=result[0].get("fechaIngreso"),
+            matter=result[0].get("nombreMateria"),
+            action_type=result[0].get("nombreTipoAccion"),
+            crime_issue=result[0].get("nombreDelito")
         )
-        results.append(task)
+        await parse_movements(client, item)
+        yield item
 
-    return await asyncio.gather(*results)
 
-
-async def parse_movements(client: httpx.AsyncClient, movements: list[dict]):
-    ulr = "https://api.funcionjudicial.gob.ec/informacion/actuacionesJudiciales"
-
-    payload_activity = json.dumps({
-        "idMovimientoJuicioIncidente": 23994282,
-        "idJuicio": "07U01202200076G",
-        "idJudicatura": "07U01",
-        "idIncidenteJudicatura": 25219260,
-        "aplicativo": "web",
-        "nombreJudicatura": "UNIDAD JUDICIAL ESPECIALIZADA DE GARANTÍAS PENITENCIARIAS CON SEDE EN EL CANTÓN MACHALA",
-        "incidente": 1
-    })
+async def parse_movements(client: httpx.AsyncClient, parent_item: ExpelItem):
+    url = f"https://api.funcionjudicial.gob.ec/informacion/getIncidenteJudicatura/{parent_item.no_process}"
+    movements = await get_api_data(client, url, headers)
 
     for movement in movements:
-        pass
+        item = MovementItem(
+            city=movement.get("ciudad"),
+            jurisdiction=movement.get("nombreJudicatura")
+        )
+
+        incidents = movement.get("lstIncidenteJudicatura")
+
+        for incident in incidents:
+            sub_item = IncidentItem(
+                no_movement=incident.get("incidente"),
+                entry_date=incident.get("fechaCrea"),
+                actors=[litigante["nombresLitigante"] for litigante in incident["lstLitiganteActor"]
+                        ] if incident["lstLitiganteActor"] is not None else [],
+                defendants=[litigante["nombresLitigante"] for litigante in incident["lstLitiganteDemandado"]
+                            ] if incident["lstLitiganteDemandado"] is not None else []
+            )
+
+            payload = json.dumps({
+                "idMovimientoJuicioIncidente": incident.get("idMovimientoJuicioIncidente"),
+                "idJuicio": parent_item.no_process,
+                "idJudicatura": movement.get("idJudicatura"),
+                "idIncidenteJudicatura": incident.get("idIncidenteJudicatura"),
+                "aplicativo": "web",
+                "nombreJudicatura": item.jurisdiction,
+                "incidente": sub_item.no_movement,
+            }, ensure_ascii=False)
+
+            await parse_activities(client, payload, sub_item)
+            item.incidents.append(sub_item)
+
+        parent_item.movements.append(item)
+
+    pprint(asdict(parent_item))
 
 
-async def parse_activities(client: httpx.AsyncClient, activities: dict):
-    for activity in activities:
-        pass
+async def parse_activities(client: httpx.Client, payload: str, parent_item: IncidentItem):
+    url = "https://api.funcionjudicial.gob.ec/informacion/actuacionesJudiciales"
+    activities = await post_api_data(client, url, headers, payload)
 
-# for process in processes_response:
-#     id_judgment = process.get("idJuicio")
-#     movements_response = asyncio.create_task(
-#         get_api_data(client, url_movements, headers, id_judgment))
-#     fetch_data.append(movements_response)
-
-# fetch_data = await asyncio.gather(*fetch_data)
-
-# # id_judgment = processes_response[0].get("idJuicio")
-
-# # movements_response = await get_api_data(client, url_movements, headers, id_judgment)
-# # pprint(movements_response)
+    for act in activities:
+        item = ActivityItem(
+            entry_date=act.get("fecha"),
+            title=act.get("tipo"),
+            activity=act.get("actividad")
+        )
+        parent_item.activities.append(item)
 
 
-async def run(search_id: str):
-    async with httpx.AsyncClient() as client:
-        result = await get_initial_query(client, search_id)
-        movements = await parse_data(client, result)
+async def async_run(search_id: str):
+    async with httpx.AsyncClient(proxies=proxies) as client:
+        results = await get_initial_query(client, search_id)
+
+        async for res in parse_data(client, results):
+            item = asdict(res)
+            crawlab.save_item(item)
+            pprint(item)
 
 
-if __name__ == "__main__":
-    asyncio.run(run("1709331886"))
+@command()
+@option("--search_id", "-s", help="The id (cedula) to scrape")
+def cli(search_id):
+    asyncio.run(async_run(search_id))
+
+
+cli()
