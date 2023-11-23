@@ -10,7 +10,8 @@ scrapper_ids = {
     "ant": "65498c25f8bd10ca1328ed85",
     "supa": "65556093f8bd10ca1328ef2c",
     "senescyt": "654e575cf8bd10ca1328ee31",
-    "min_educacion": "6557d002f8bd10ca1328f063"
+    "min_educacion": "6557d002f8bd10ca1328f063",
+    "expel": "655ed326f8bd10ca1328f49a"
 }
 
 headers = {

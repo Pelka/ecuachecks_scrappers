@@ -189,6 +189,7 @@ async def async_run(search_id: str):
 @command()
 @option("--search_id", "-s", help="The id (cedula) to scrape")
 def cli(search_id):
+    # 1709331886
     asyncio.run(async_run(search_id))
 
 
