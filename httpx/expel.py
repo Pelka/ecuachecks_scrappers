@@ -162,8 +162,6 @@ async def parse_movements(client: httpx.AsyncClient, parent_item: ExpelItem):
 
         parent_item.movements.append(item)
 
-    pprint(asdict(parent_item))
-
 
 async def parse_activities(client: httpx.Client, payload: str, parent_item: IncidentItem):
     url = "https://api.funcionjudicial.gob.ec/informacion/actuacionesJudiciales"
