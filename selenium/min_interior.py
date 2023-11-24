@@ -66,7 +66,7 @@ def setup_driver():
     driver = uc.Chrome(
         options=options,
         seleniumwire_options=wire_options,
-        # version_main=106
+        version_main=106
     )
 
     driver.execute_script(
