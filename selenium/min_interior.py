@@ -160,7 +160,17 @@ def parse_data(parser: HTMLParser, cert_url: str):
     pprint(dict_item)
 
 
-if __name__ == "__main__":
+def run(search_id: str):
     driver = setup_driver()
-    data, cert = get_html(driver, "1725514119")
+    data, cert = get_html(driver, search_id)
     parse_data(data, cert)
+
+
+@command()
+@option('--search_id', '-s', help="The id (cedula) to scrape")
+def cli(search_id):
+    # 1721194593 1725514119 1721194592 1709026718 0922485172
+    run(search_id)
+
+
+cli()
