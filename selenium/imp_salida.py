@@ -6,7 +6,8 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
-from seleniumwire.undetected_chromedriver import v2 as uc
+# from seleniumwire.undetected_chromedriver import v2 as uc
+import undetected_chromedriver as uc
 
 # Third-party libraries for enhanced web scraping
 from selectolax.parser import HTMLParser
@@ -14,7 +15,6 @@ from fake_useragent import UserAgent
 from selenium_stealth import stealth
 
 # Data handling and utility tools
-from typing import Generator
 from dataclasses import dataclass, asdict
 from pprint import pprint
 
@@ -29,8 +29,6 @@ import time
 PROXY_HTTP = "http://customer-ecuachecks-cc-ec-sessid-0620968049-sesstime-3:Ecuachecks2023@pr.oxylabs.io:7777"
 PROXY_HTTPS = "https://customer-ecuachecks-cc-ec-sessid-0620968049-sesstime-3:Ecuachecks2023@pr.oxylabs.io:7777"
 USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
-# URL = "https://bot.sannysoft.com/"
-# URL = "https://nowsecure.nl"
 URL = "https://impedimentos.migracion.gob.ec/simiec-consultaImpedimentos/"
 
 

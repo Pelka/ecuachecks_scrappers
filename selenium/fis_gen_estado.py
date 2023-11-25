@@ -3,7 +3,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 from seleniumwire.undetected_chromedriver import v2 as uc
 
@@ -13,7 +12,6 @@ from fake_useragent import UserAgent
 from selenium_stealth import stealth
 
 # Data handling and utility tools
-from typing import Generator
 from dataclasses import dataclass, asdict, field
 from pprint import pprint
 

@@ -1,9 +1,6 @@
 # Selenium and related imports
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
 import undetected_chromedriver as uc
 
 # Third-party libraries for enhanced web scraping
@@ -12,7 +9,6 @@ from fake_useragent import UserAgent
 from selenium_stealth import stealth
 
 # Data handling and utility tools
-from typing import Generator
 from dataclasses import dataclass, asdict
 from pprint import pprint
 
