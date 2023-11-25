@@ -60,7 +60,7 @@ def setup_driver():
     options.add_argument('--incognito')
     options.add_argument('--profile-directory=Default')
     options.add_argument('--no-sandbox')
-    options.add_argument(f'user-agent={USER_AGENT}')
+    options.add_argument(f'--user-agent={USER_AGENT}')
     wire_options = {
         'connection_timeout': None,  # Wait forever for the connection to start
         'connection_keep_alive': True,  # Use connection keep-alive

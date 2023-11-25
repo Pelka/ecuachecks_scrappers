@@ -42,7 +42,6 @@ class MinEducacionItem:
 def setup_driver():
     # Settings of undetected_chromedriver to avoid detection
     options = webdriver.ChromeOptions()
-    service = Service(ChromeDriverManager().install())
 
     options.add_argument('--headless=new')
     options.add_argument('--disable-extensions')
@@ -55,7 +54,9 @@ def setup_driver():
     options.add_argument('--no-sandbox')
     options.add_experimental_option('excludeSwitches', ['enable-automation'])
     options.add_experimental_option('useAutomationExtension', False)
-    options.add_argument(f'user-agent={USER_AGENT}')
+    options.add_argument(f'--user-agent={USER_AGENT}')
+
+    service = Service(ChromeDriverManager().install())
 
     wire_options = {
         'connection_timeout': None,  # Wait forever for the connection to start

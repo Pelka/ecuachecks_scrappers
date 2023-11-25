@@ -4,7 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-import undetected_chromedriver as uc
+from seleniumwire.undetected_chromedriver import v2 as uc
 
 # Third-party libraries for enhanced web scraping
 from selectolax.parser import HTMLParser
@@ -58,7 +58,7 @@ def setup_driver():
     options.add_argument('--incognito')
     options.add_argument('--profile-directory=Default')
     options.add_argument('--no-sandbox')
-    options.add_argument(f'user-agent={USER_AGENT}')
+    options.add_argument(f'--user-agent={USER_AGENT}')
 
     wire_options = {
         'connection_timeout': None,  # Wait forever for the connection to start

@@ -1,10 +1,12 @@
 # Selenium and related imports
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-import undetected_chromedriver as uc
+from webdriver_manager.chrome import ChromeDriverManager
+from seleniumwire.undetected_chromedriver import v2 as uc
 
 # Third-party libraries for enhanced web scraping
 from selectolax.parser import HTMLParser
@@ -23,35 +25,33 @@ import crawlab
 
 import time
 
-PROXY_HTTP = "http://customer-ecuachecks-cc-ec:Ecuachecks2023@pr.oxylabs.io:7777"
-PROXY_HTTPS = "https://customer-ecuachecks-cc-ec:Ecuachecks2023@pr.oxylabs.io:7777"
+
+PROXY_HTTP = "http://customer-ecuachecks-cc-ec-sessid-0620968049-sesstime-3:Ecuachecks2023@pr.oxylabs.io:7777"
+PROXY_HTTPS = "https://customer-ecuachecks-cc-ec-sessid-0620968049-sesstime-3:Ecuachecks2023@pr.oxylabs.io:7777"
 USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
-URL = "https://certificados.ministeriodelinterior.gob.ec/gestorcertificados/antecedentes/"
-
-
-@dataclass
-class MinInteriorItem:
-    name: str
-    id_number: str
-    doc_type: str
-    background: str
-    certificate: str
+# URL = "https://bot.sannysoft.com/"
+# URL = "https://nowsecure.nl"
+URL = "https://impedimentos.migracion.gob.ec/simiec-consultaImpedimentos/"
 
 
 def setup_driver():
 
     # Settings of undetected_chromedriver to avoid detection
     options = uc.ChromeOptions()
-    options.add_argument('--headless=new')
-    options.add_argument('--disable-blink-features=AutomationControlled')
+    # options.add_argument('--headless=new')
     options.add_argument('--disable-extensions')
     options.add_argument('--disable-popup-blocking')
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--disable-plugins-discovery')
+    options.add_argument('--disable-blink-features=AutomationControlled')
+    options.add_argument('--ignore-ssl-errors=yes')
+    options.add_argument('--ignore-certificate-errors')
     options.add_argument('--incognito')
     options.add_argument('--profile-directory=Default')
     options.add_argument('--no-sandbox')
     options.add_argument(f'--user-agent={USER_AGENT}')
+
+    service = Service(ChromeDriverManager().install())
 
     wire_options = {
         'connection_timeout': None,  # Wait forever for the connection to start
@@ -64,9 +64,10 @@ def setup_driver():
 
     # Setup driver
     driver = uc.Chrome(
+        service=service,
         options=options,
-        seleniumwire_options=wire_options,
-        version_main=106
+        seleniumwire_options=wire_options
+        # version_main=106
     )
 
     driver.execute_script(
@@ -86,7 +87,7 @@ def setup_driver():
     return driver
 
 
-def get_html(driver: uc.Chrome, search_id: str):
+def get_html(driver: uc.Chrome):
     try:
         driver.get(URL)
         result = recaptchaSolver(
@@ -108,69 +109,16 @@ def get_html(driver: uc.Chrome, search_id: str):
 
         driver.execute_script(f"onCaptchaFinished('{code}')")
         driver.switch_to.default_content()
+        time.sleep(900)
 
-        time.sleep(5)
-
-        driver.find_element(
-            By.XPATH, "//button/span[text()='Aceptar']").click()
-
-        time.sleep(7)
-
-        driver.find_element(By.ID, 'txtCi').send_keys(search_id)
-
-        siguiente_button = driver.find_element(By.ID, 'btnSig1')
-        siguiente_button.click()
-
-        time.sleep(7)
-
-        motivo_textarea = driver.find_element(By.ID, 'txtMotivo')
-        motivo_textarea.clear()
-        motivo_textarea.send_keys("Consulta de antecedentes")
-
-        driver.find_element(By.ID, 'btnSig2').click()
-        time.sleep(5)
-
-        parser = HTMLParser(driver.page_source)
-
-        driver.find_element(By.ID, 'btnOpen').click()
-        time.sleep(5)
-        driver.switch_to.window(driver.window_handles[-1])
-
-        cert_url = driver.current_url
-
-        return (parser, cert_url)
-
-    except Exception as e:
-        print(e)
+    finally:
         driver.quit()
 
 
-def parse_data(parser: HTMLParser, cert_url: str):
-    item = MinInteriorItem(
-        name=parser.css_first('#dvName1').text(strip=True),
-        id_number=parser.css_first('#dvType1').text(strip=True),
-        doc_type=parser.css_first('#dvCi1').text(strip=True),
-        background=parser.css_first(
-            '#dvAntecedent1').text(strip=True),
-        certificate=cert_url
-    )
-
-    dict_item = asdict(item)
-    crawlab.save_item(dict_item)
-    pprint(dict_item)
-
-
-def run(search_id: str):
+def run():
     driver = setup_driver()
-    data, cert = get_html(driver, search_id)
-    parse_data(data, cert)
+    get_html(driver)
 
 
-@command()
-@option('--search_id', '-s', help="The id (cedula) to scrape")
-def cli(search_id):
-    # 1721194593 1725514119 1721194592 1709026718 0922485172
-    run(search_id)
-
-
-cli()
+if __name__ == "__main__":
+    run()
