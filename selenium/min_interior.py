@@ -1,7 +1,6 @@
 # Selenium and related imports
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-import undetected_chromedriver as uc
+from seleniumwire.undetected_chromedriver import webdriver as uc
 
 # Third-party libraries for enhanced web scraping
 from selectolax.parser import HTMLParser
@@ -35,38 +34,33 @@ class MinInteriorItem:
 
 
 def setup_driver():
-
     # Settings of undetected_chromedriver to avoid detection
     options = uc.ChromeOptions()
-    options.add_argument('--headless=new')
-    options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_argument('--disable-extensions')
-    options.add_argument('--disable-popup-blocking')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--disable-plugins-discovery')
-    options.add_argument('--incognito')
-    options.add_argument('--profile-directory=Default')
-    options.add_argument('--no-sandbox')
-    options.add_argument(f'--user-agent={USER_AGENT}')
+    options.add_argument("--headless=new")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-popup-blocking")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-plugins-discovery")
+    options.add_argument("--incognito")
+    options.add_argument("--profile-directory=Default")
+    options.add_argument("--no-sandbox")
+    options.add_argument(f"--user-agent={USER_AGENT}")
 
     wire_options = {
-        'connection_timeout': None,  # Wait forever for the connection to start
-        'connection_keep_alive': True,  # Use connection keep-alive
-        'proxy': {
-            'http': PROXY_HTTP,
-            'https': PROXY_HTTPS
-        },
+        "connection_timeout": None,  # Wait forever for the connection to start
+        "connection_keep_alive": True,  # Use connection keep-alive
+        "proxy": {"http": PROXY_HTTP, "https": PROXY_HTTPS},
     }
 
     # Setup driver
     driver = uc.Chrome(
-        options=options,
-        seleniumwire_options=wire_options,
-        version_main=106
+        options=options, seleniumwire_options=wire_options  # , version_main=106
     )
 
     driver.execute_script(
-        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+    )
 
     stealth(
         driver,
@@ -85,11 +79,8 @@ def setup_driver():
 def get_html(driver: uc.Chrome, search_id: str):
     try:
         driver.get(URL)
-        result = recaptchaSolver(
-            "6Ld38BkUAAAAAPATwit3FXvga1PI6iVTb6zgXw62",
-            URL
-        )
-        code = result.get('code')
+        result = recaptchaSolver("6Ld38BkUAAAAAPATwit3FXvga1PI6iVTb6zgXw62", URL)
+        code = result.get("code")
         print(code)
         frames = driver.find_elements(By.TAG_NAME, "iframe")
 
@@ -105,30 +96,29 @@ def get_html(driver: uc.Chrome, search_id: str):
         driver.execute_script(f"onCaptchaFinished('{code}')")
         driver.switch_to.default_content()
 
-        time.sleep(5)
+        time.sleep(10)
 
-        driver.find_element(
-            By.XPATH, "//button/span[text()='Aceptar']").click()
+        driver.find_element(By.XPATH, "//button/span[text()='Aceptar']").click()
 
         time.sleep(7)
 
-        driver.find_element(By.ID, 'txtCi').send_keys(search_id)
+        driver.find_element(By.ID, "txtCi").send_keys(search_id)
 
-        siguiente_button = driver.find_element(By.ID, 'btnSig1')
+        siguiente_button = driver.find_element(By.ID, "btnSig1")
         siguiente_button.click()
 
         time.sleep(7)
 
-        motivo_textarea = driver.find_element(By.ID, 'txtMotivo')
+        motivo_textarea = driver.find_element(By.ID, "txtMotivo")
         motivo_textarea.clear()
         motivo_textarea.send_keys("Consulta de antecedentes")
 
-        driver.find_element(By.ID, 'btnSig2').click()
+        driver.find_element(By.ID, "btnSig2").click()
         time.sleep(5)
 
         parser = HTMLParser(driver.page_source)
 
-        driver.find_element(By.ID, 'btnOpen').click()
+        driver.find_element(By.ID, "btnOpen").click()
         time.sleep(5)
         driver.switch_to.window(driver.window_handles[-1])
 
@@ -143,12 +133,11 @@ def get_html(driver: uc.Chrome, search_id: str):
 
 def parse_data(parser: HTMLParser, cert_url: str):
     item = MinInteriorItem(
-        name=parser.css_first('#dvName1').text(strip=True),
-        id_number=parser.css_first('#dvType1').text(strip=True),
-        doc_type=parser.css_first('#dvCi1').text(strip=True),
-        background=parser.css_first(
-            '#dvAntecedent1').text(strip=True),
-        certificate=cert_url
+        name=parser.css_first("#dvName1").text(strip=True),
+        id_number=parser.css_first("#dvType1").text(strip=True),
+        doc_type=parser.css_first("#dvCi1").text(strip=True),
+        background=parser.css_first("#dvAntecedent1").text(strip=True),
+        certificate=cert_url,
     )
 
     dict_item = asdict(item)
@@ -163,7 +152,7 @@ def run(search_id: str):
 
 
 @command()
-@option('--search_id', '-s', help="The id (cedula) to scrape")
+@option("--search_id", "-s", help="The id (cedula) to scrape")
 def cli(search_id):
     # 1721194593 1725514119 1721194592 1709026718 0922485172
     run(search_id)

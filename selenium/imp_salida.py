@@ -6,8 +6,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
-# from seleniumwire.undetected_chromedriver import v2 as uc
-import undetected_chromedriver as uc
+from seleniumwire.undetected_chromedriver import webdriver as uc
 
 # Third-party libraries for enhanced web scraping
 from selectolax.parser import HTMLParser
@@ -33,31 +32,27 @@ URL = "https://impedimentos.migracion.gob.ec/simiec-consultaImpedimentos/"
 
 
 def setup_driver():
-
     # Settings of undetected_chromedriver to avoid detection
     options = uc.ChromeOptions()
     # options.add_argument('--headless=new')
-    options.add_argument('--disable-extensions')
-    options.add_argument('--disable-popup-blocking')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--disable-plugins-discovery')
-    options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_argument('--ignore-ssl-errors=yes')
-    options.add_argument('--ignore-certificate-errors')
-    options.add_argument('--incognito')
-    options.add_argument('--profile-directory=Default')
-    options.add_argument('--no-sandbox')
-    options.add_argument(f'--user-agent={USER_AGENT}')
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-popup-blocking")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-plugins-discovery")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--ignore-ssl-errors=yes")
+    options.add_argument("--ignore-certificate-errors")
+    options.add_argument("--incognito")
+    options.add_argument("--profile-directory=Default")
+    options.add_argument("--no-sandbox")
+    options.add_argument(f"--user-agent={USER_AGENT}")
 
     service = Service(ChromeDriverManager().install())
 
     wire_options = {
-        'connection_timeout': None,  # Wait forever for the connection to start
-        'connection_keep_alive': True,  # Use connection keep-alive
-        'proxy': {
-            'http': PROXY_HTTP,
-            'https': PROXY_HTTPS
-        },
+        "connection_timeout": None,  # Wait forever for the connection to start
+        "connection_keep_alive": True,  # Use connection keep-alive
+        "proxy": {"http": PROXY_HTTP, "https": PROXY_HTTPS},
     }
 
     # Setup driver
@@ -69,7 +64,8 @@ def setup_driver():
     )
 
     driver.execute_script(
-        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+    )
 
     stealth(
         driver,
@@ -85,14 +81,11 @@ def setup_driver():
     return driver
 
 
-def get_html(driver: uc.Chrome):
+def get_html(driver):
     try:
         driver.get(URL)
-        result = recaptchaSolver(
-            "6Ld38BkUAAAAAPATwit3FXvga1PI6iVTb6zgXw62",
-            URL
-        )
-        code = result.get('code')
+        result = recaptchaSolver("6Ld38BkUAAAAAPATwit3FXvga1PI6iVTb6zgXw62", URL)
+        code = result.get("code")
         print(code)
         frames = driver.find_elements(By.TAG_NAME, "iframe")
 
