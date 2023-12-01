@@ -5,12 +5,12 @@ from decimal import Decimal
 
 ### SIMPLE SCHEMAS ###
 # --> In case when the data is not found
-class NotFoundSchema(BaseModel):
+class NotFound(BaseModel):
     message: str
 
 
 # --> ANT
-class ANTSchema(BaseModel):
+class Ant(BaseModel):
     id_number: str
     full_name: str
     license_type: str
@@ -29,7 +29,7 @@ class ANTSchema(BaseModel):
 
 
 # --> SRI
-class SRISchema(BaseModel):
+class Sri(BaseModel):
     id_number: str
     full_name: str
     message: str
@@ -43,7 +43,7 @@ class SRISchema(BaseModel):
 
 
 # --> Ministerio de Educacion
-class MinEducacionSchema(BaseModel):
+class MinEducacion(BaseModel):
     no: int
     id_number: str
     full_name: str
@@ -62,7 +62,7 @@ class MinEducacionSchema(BaseModel):
 
 
 # --> Ministerio del Interior
-class MinInteriorSchema(BaseModel):
+class MinInterior(BaseModel):
     full_name: str
     id_number: str
     doc_type: str
@@ -79,7 +79,7 @@ class MinInteriorSchema(BaseModel):
 
 
 # --> SUPA
-class SUPASchema(BaseModel):
+class SUPA(BaseModel):
     legal_representative: str
     primary_obligator: str
     judicial_process: str
@@ -120,7 +120,7 @@ class SUPASchema(BaseModel):
 
 ### COMPLEX SCHEMAS ###
 # --> Senescyt Degree
-class SenescytDegreeSchema(BaseModel):
+class SenescytDegree(BaseModel):
     title: str
     college: str
     type: str
@@ -140,12 +140,12 @@ class SenescytDegreeSchema(BaseModel):
 
 
 # --> Senescyt
-class SenescytSchema(BaseModel):
+class Senescyt(BaseModel):
     id_number: str
     full_name: str
     gender: bool
     nacionality: str
-    degress: list[SenescytDegreeSchema] = Field(default_factory=list)
+    degress: list[SenescytDegree] = Field(default_factory=list)
 
     @validator("gender", pre=True)
     def gender_to_bool(cls, value):
@@ -157,7 +157,7 @@ class SenescytSchema(BaseModel):
 
 
 # --> Fiscalia General del Estado Involved
-class FiscaliaInvolvedSchema(BaseModel):
+class FiscaliaGeneralInvolved(BaseModel):
     id_number: str
     full_name: str
     status: str
@@ -168,7 +168,7 @@ class FiscaliaInvolvedSchema(BaseModel):
 
 
 # --> Fiscalia General del Estado
-class FiscaliaSchema(BaseModel):
+class FiscaliaGeneral(BaseModel):
     attorney: str
     no_process: str
     province: str
@@ -177,7 +177,7 @@ class FiscaliaSchema(BaseModel):
     office: str
     crime: str
     unit: str
-    people: list[FiscaliaInvolvedSchema] = Field(default_factory=list)
+    people: list[FiscaliaGeneralInvolved] = Field(default_factory=list)
 
     @validator("date", pre=True)
     def date_to_datetime(cls, value):
@@ -193,7 +193,7 @@ class FiscaliaSchema(BaseModel):
 
 
 # --> Superintendia Administration
-class SuAdminSchema(BaseModel):
+class SuperintendenciaAdmin(BaseModel):
     appointment_date: datetime
     article: int
     com_reg_date: datetime
@@ -217,7 +217,7 @@ class SuAdminSchema(BaseModel):
 
 
 # --> Superintendia Shareholder
-class SuShareholderSchema(BaseModel):
+class SuperintendenciaShareholder(BaseModel):
     effective_possession: str
     id_file: int
     invested_capital: Decimal
@@ -232,13 +232,19 @@ class SuShareholderSchema(BaseModel):
         return Decimal(value)
 
 
-schemas = {
-    "not_found": NotFoundSchema,
-    "ant": ANTSchema,
-    "sri": SRISchema,
-    "supa": SUPASchema,
-    "senescyt": SenescytSchema,
-    "fis_gen_estado": FiscaliaSchema,
-    "min_educacion": MinEducacionSchema,
-    "min_interior": MinInteriorSchema,
+# --> Superintendia
+class Superintendencia(BaseModel):
+    current_administration: list[SuperintendenciaAdmin] = Field(default_factory=list)
+    current_shareholder: list[SuperintendenciaShareholder] = Field(default_factory=list)
+
+
+scrapper_schema = {
+    "not_found": NotFound,
+    "ant": Ant,
+    "sri": Sri,
+    "supa": Superintendencia,
+    "senescyt": Senescyt,
+    "fis_gen_estado": FiscaliaGeneral,
+    "min_educacion": MinEducacion,
+    "min_interior": MinInterior,
 }

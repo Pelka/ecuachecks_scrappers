@@ -1,4 +1,4 @@
-# My FastAPI App
+# Ecuachecks API
 
 This is a basic API built with FastAPI. It includes features such as calling an external API, user authentication, and WebSocket connections.
 
