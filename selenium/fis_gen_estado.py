@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-from seleniumwire.undetected_chromedriver import v2 as uc
+from seleniumwire.undetected_chromedriver import webdriver as uc
 
 # Third-party libraries for enhanced web scraping
 from selectolax.parser import HTMLParser
@@ -25,7 +25,9 @@ import time
 PROXY_HTTP = "http://customer-ecuachecks-cc-ec-sessid-0620968049-sesstime-3:Ecuachecks2023@pr.oxylabs.io:7777"
 PROXY_HTTPS = "https://customer-ecuachecks-cc-ec-sessid-0620968049-sesstime-3:Ecuachecks2023@pr.oxylabs.io:7777"
 USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
-URL = "https://www.gestiondefiscalias.gob.ec/siaf/informacion/web/noticiasdelito/index.php"
+URL = (
+    "https://www.gestiondefiscalias.gob.ec/siaf/informacion/web/noticiasdelito/index.php"
+)
 
 
 @dataclass
@@ -40,7 +42,6 @@ class FisGenEstadoItem:
     no_process: str
     place: str
     date: str
-    hour: str
     state: str
     no_office: str
     crime: str
@@ -50,31 +51,27 @@ class FisGenEstadoItem:
 
 
 def setup_driver():
-
     # Settings of undetected_chromedriver to avoid detection
     options = uc.ChromeOptions()
-    options.add_argument('--headless=new')
-    options.add_argument('--disable-extensions')
-    options.add_argument('--disable-popup-blocking')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--disable-plugins-discovery')
-    options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_argument('--ignore-ssl-errors=yes')
-    options.add_argument('--ignore-certificate-errors')
-    options.add_argument('--incognito')
-    options.add_argument('--profile-directory=Default')
-    options.add_argument('--no-sandbox')
-    options.add_argument(f'--user-agent={USER_AGENT}')
+    options.add_argument("--headless=new")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-popup-blocking")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-plugins-discovery")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--ignore-ssl-errors=yes")
+    options.add_argument("--ignore-certificate-errors")
+    options.add_argument("--incognito")
+    options.add_argument("--profile-directory=Default")
+    options.add_argument("--no-sandbox")
+    options.add_argument(f"--user-agent={USER_AGENT}")
 
     service = Service(ChromeDriverManager().install())
 
     wire_options = {
-        'connection_timeout': None,  # Wait forever for the connection to start
-        'connection_keep_alive': True,  # Use connection keep-alive
-        'proxy': {
-            'http': PROXY_HTTP,
-            'https': PROXY_HTTPS
-        },
+        "connection_timeout": None,  # Wait forever for the connection to start
+        "connection_keep_alive": True,  # Use connection keep-alive
+        "proxy": {"http": PROXY_HTTP, "https": PROXY_HTTPS},
     }
 
     # Setup driver
@@ -82,11 +79,12 @@ def setup_driver():
         service=service,
         options=options,
         seleniumwire_options=wire_options,
-        version_main=106
+        version_main=106,
     )
 
     driver.execute_script(
-        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+    )
 
     stealth(
         driver,
@@ -106,12 +104,11 @@ def get_html(driver: uc.Chrome, search_id: str):
     try:
         driver.get(URL)
 
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((
-            By.ID, "pwd"
-        ))).send_keys(search_id)
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "pwd"))
+        ).send_keys(search_id)
 
-        driver.find_elements(
-            By.ID, "buscar")[2].click()
+        driver.find_elements(By.ID, "buscar")[2].click()
 
         time.sleep(3)
 
@@ -134,16 +131,14 @@ def parse_data(parser: HTMLParser):
         people_data = people_table.css("tbody tr")
 
         item = FisGenEstadoItem(
-            no_process=crime_table.css_first(
-                "th").text().split(".")[1].strip(),
+            no_process=crime_table.css_first("th").text().split(".")[1].strip(),
             place=crime_data[2].text(),
-            date=crime_data[4].text(),
-            hour=crime_data[6].text(),
+            date=f"{crime_data[4].text()} {crime_data[6].text()}",
             state=crime_data[10].text(),
             no_office=crime_data[12].text(),
             crime=crime_data[14].text(),
             unit=crime_data[16].text(),
-            attorney=crime_data[17].text()
+            attorney=crime_data[17].text(),
         )
 
         for person in people_data:
@@ -151,7 +146,7 @@ def parse_data(parser: HTMLParser):
             subitem = PersonItem(
                 id_number=data[0].text(strip=True),
                 full_name=data[1].text(strip=True),
-                status=data[2].text(strip=True)
+                status=data[2].text(strip=True),
             )
             item.people.append(subitem)
 

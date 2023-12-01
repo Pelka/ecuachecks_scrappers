@@ -4,7 +4,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
 from seleniumwire.undetected_chromedriver import webdriver as uc
 
 # Third-party libraries for enhanced web scraping
@@ -23,10 +22,10 @@ import random
 
 import time
 
-PROXY_HTTP = "http://customer-ecuachecks-cc-ec-sessid-0620968049-sesstime-3:Ecuachecks2023@pr.oxylabs.io:7777"
-PROXY_HTTPS = "https://customer-ecuachecks-cc-ec-sessid-0620968049-sesstime-3:Ecuachecks2023@pr.oxylabs.io:7777"
+PROXY = "customer-ecuachecks-cc-ec-sessid-0640482368-sesstime-10:Ecuachecks2023@pr.oxylabs.io:7777"
 USER_AGENT = UserAgent(os=["windows"], min_percentage=15.0).random
-URL = "https://appscvs1.supercias.gob.ec/consultaPersona/consulta_cia_personas.zul"
+# URL = "https://abrahamjuliot.github.io/creepjs/"
+URL = "https://appscvs1.supercias.gob.ec/consultaPersona/consulta_cia_param.zul"
 
 
 @dataclass
@@ -66,7 +65,9 @@ class superintendenciaItem:
 def setup_driver():
     # Settings of undetected_chromedriver to avoid detection
     options = uc.ChromeOptions()
-    options.add_argument("--headless=new")
+    # options.add_argument("--headless=new")
+    options.add_argument("--start-maximized")
+    options.add_argument("--start-fullscreen")
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-popup-blocking")
     options.add_argument("--disable-dev-shm-usage")
@@ -74,22 +75,19 @@ def setup_driver():
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("--ignore-ssl-errors=yes")
     options.add_argument("--ignore-certificate-errors")
-    options.add_argument("--incognito")
+    # options.add_argument("--incognito")
     options.add_argument("--profile-directory=Default")
     options.add_argument("--no-sandbox")
     options.add_argument(f"--user-agent={USER_AGENT}")
 
-    service = Service(ChromeDriverManager().install())
-
     wire_options = {
-        "connection_timeout": None,  # Wait forever for the connection to start
         "connection_keep_alive": True,  # Use connection keep-alive
-        "proxy": {"http": PROXY_HTTP, "https": PROXY_HTTPS},
+        "proxy": {"http": f"http://{PROXY}", "https": f"https://{PROXY}"},
     }
 
     # Setup driver
     driver = uc.Chrome(
-        service=service,
+        # service=service,
         options=options,
         seleniumwire_options=wire_options,
         # version_main=106,
@@ -117,34 +115,6 @@ def get_html(driver: uc.Chrome, search_id: str):
     try:
         driver.get(URL)
 
-        param_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located(
-                (
-                    By.XPATH,
-                    "//span[contains(text(), 'Parametro:')]/following-sibling::i[contains(@class, 'z-combobox')]/input",
-                )
-            )
-        )
-
-        param_input.click()
-
-        for letter in search_id:
-            param_input.send_keys(letter)
-            time.sleep(random.randint(50, 200) / 1000)
-
-        WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.XPATH, "//td[@class='z-comboitem-text']"))
-        )
-
-        param_input.send_keys(Keys.TAB)
-
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//table[@style='table-layout:fixed;']")
-            )
-        )
-
-        return HTMLParser(driver.page_source)
     finally:
         driver.quit()
 
@@ -176,9 +146,6 @@ def parse_data(parser: HTMLParser):  # parser: HTMLParser
                 subitem = create_item(data, AdministrationItem)
                 item.current_administration.append(subitem)
             else:
-                # field_names = [field.name for field in fields(ShareholderItem)]
-                # dic_data = {field_names[i]: data[i].text(strip=True) for i in range(8)}
-                # subitem = ShareholderItem(**dic_data)
                 subitem = create_item(data, ShareholderItem)
                 item.current_shareholder.append(subitem)
 

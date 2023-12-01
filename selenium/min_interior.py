@@ -26,7 +26,7 @@ URL = "https://certificados.ministeriodelinterior.gob.ec/gestorcertificados/ante
 
 @dataclass
 class MinInteriorItem:
-    name: str
+    full_name: str
     id_number: str
     doc_type: str
     background: str
@@ -134,8 +134,8 @@ def get_html(driver: uc.Chrome, search_id: str):
 def parse_data(parser: HTMLParser, cert_url: str):
     item = MinInteriorItem(
         name=parser.css_first("#dvName1").text(strip=True),
-        id_number=parser.css_first("#dvType1").text(strip=True),
-        doc_type=parser.css_first("#dvCi1").text(strip=True),
+        id_number=parser.css_first("#dvCi1").text(strip=True),
+        doc_type=parser.css_first("#dvType1").text(strip=True),
         background=parser.css_first("#dvAntecedent1").text(strip=True),
         certificate=cert_url,
     )

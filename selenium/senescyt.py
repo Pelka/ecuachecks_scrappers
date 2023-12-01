@@ -43,41 +43,37 @@ class SenescytItem:
     full_name: str
     gender: str
     nacionality: str
-    degress: list[DegreeItem] = field(default_factory=list)
+    degreess: list[DegreeItem] = field(default_factory=list)
 
 
 def setup_driver():
     # Settings of undetected_chromedriver to avoid detection
 
     options = uc.ChromeOptions()
-    options.add_argument('--headless=new')
-    options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_argument('--disable-extensions')
-    options.add_argument('--disable-popup-blocking')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--disable-plugins-discovery')
-    options.add_argument('--incognito')
-    options.add_argument('--profile-directory=Default')
-    options.add_argument('--no-sandbox')
-    options.add_argument(f'--user-agent={USER_AGENT}')
+    options.add_argument("--headless=new")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-popup-blocking")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-plugins-discovery")
+    options.add_argument("--incognito")
+    options.add_argument("--profile-directory=Default")
+    options.add_argument("--no-sandbox")
+    options.add_argument(f"--user-agent={USER_AGENT}")
     wire_options = {
-        'connection_timeout': None,  # Wait forever for the connection to start
-        'connection_keep_alive': True,  # Use connection keep-alive
-        'proxy': {
-            'http': PROXY_HTTP,
-            'https': PROXY_HTTPS
-        },
+        "connection_timeout": None,  # Wait forever for the connection to start
+        "connection_keep_alive": True,  # Use connection keep-alive
+        "proxy": {"http": PROXY_HTTP, "https": PROXY_HTTPS},
     }
 
     # Setup driver
     driver = uc.Chrome(
-        options=options,
-        seleniumwire_options=wire_options,
-        version_main=106
+        options=options, seleniumwire_options=wire_options, version_main=106
     )
 
     driver.execute_script(
-        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+    )
 
     stealth(
         driver,
@@ -99,11 +95,7 @@ def captcha_solver(img_src):
 
     try:
         result = solver.normal(
-            img_src,
-            phrase=False,
-            caseSensitive=True,
-            minLen=6,
-            maxLen=6
+            img_src, phrase=False, caseSensitive=True, minLen=6, maxLen=6
         )
 
         print("Response:", result)
@@ -115,22 +107,20 @@ def captcha_solver(img_src):
 
 def wait_until_page_load(driver: uc.Chrome, timeout=10.0):
     WebDriverWait(driver, timeout).until(
-        lambda d: d.execute_script(
-            'return document.readyState') == 'complete'
+        lambda d: d.execute_script("return document.readyState") == "complete"
     )
 
 
 def error_handler(tree: HTMLParser):
     try:
-        e_msg = tree.css_first('.msg-rojo').text(strip=True)
+        e_msg = tree.css_first(".msg-rojo").text(strip=True)
     except:
-        e_msg = tree.css_first('.ui-messages-error').text()
+        e_msg = tree.css_first(".ui-messages-error").text()
 
     raise Exception(e_msg)
 
 
 def get_html(driver: uc.Chrome, search_id: str):
-
     try:
         driver.get(URL)
         wait_until_page_load(driver)
@@ -141,7 +131,7 @@ def get_html(driver: uc.Chrome, search_id: str):
 
         result = captcha_solver(img)
 
-        if not result.get('code', ''):
+        if not result.get("code", ""):
             raise Exception("Failed captcha")
 
         driver.find_element(
@@ -150,7 +140,7 @@ def get_html(driver: uc.Chrome, search_id: str):
 
         driver.find_element(
             By.CSS_SELECTOR, 'input[id="formPrincipal:captchaSellerInput"]'
-        ).send_keys(result.get('code'))
+        ).send_keys(result.get("code"))
 
         driver.find_element(
             By.CSS_SELECTOR, 'button[id="formPrincipal:boton-buscar"]'
@@ -162,7 +152,9 @@ def get_html(driver: uc.Chrome, search_id: str):
 
         try:
             driver.find_element(
-                By.XPATH, '//div[contains(@id,"pnlListaTitulos") and contains(@class,"panel")]')
+                By.XPATH,
+                '//div[contains(@id,"pnlListaTitulos") and contains(@class,"panel")]',
+            )
         except:
             error_handler(tree)
 
@@ -174,24 +166,25 @@ def get_html(driver: uc.Chrome, search_id: str):
 
 def parse_data(tree: HTMLParser):
     def get_text_safe(element: Node | None):
-        return element.next.text() if element and element.next else ''
+        return element.next.text() if element and element.next else ""
 
     personal_data = tree.css(
-        'div#formPrincipal_pnlInfoPersonalcontent td.ui-panelgrid-cell.grid-left label')
+        "div#formPrincipal_pnlInfoPersonalcontent td.ui-panelgrid-cell.grid-left label"
+    )
 
     item = SenescytItem(
-        id_number=personal_data[0].text(),
-        full_name=personal_data[1].text(),
-        gender=personal_data[2].text(),
-        nacionality=personal_data[3].text(),
+        id_number=personal_data[0].text(strip=True),
+        full_name=personal_data[1].text(strip=True),
+        gender=personal_data[2].text(strip=True),
+        nacionality=personal_data[3].text(strip=True),
     )
 
     degrees_tree = tree.css('div[id*="pnlListaTitulos"][class*="panel"]')
 
     if degrees_tree:
         for panel in degrees_tree:
-            degree_raw = panel.css_first('tbody')
-            degree_data = degree_raw.css('td span')
+            degree_raw = panel.css_first("tbody")
+            degree_data = degree_raw.css("td span")
 
             sub_item = DegreeItem(
                 title=get_text_safe(degree_data[0]),
@@ -218,7 +211,7 @@ def run(search_id: str):
 
 
 @command()
-@option('--search_id', '-s', help="The id (cedula) to scrape")
+@option("--search_id", "-s", help="The id (cedula) to scrape")
 def cli(search_id):
     # 1721194593 1709026718 1709822207
     run(search_id)
