@@ -1,20 +1,20 @@
 import os
 from dotenv import load_dotenv
-from models import ScrapperTaskModel, DATA_MODELS
+from models import ScrapperTaskModel, schemas
 
 import httpx
 
 load_dotenv()
 
 scrapper_ids = {
-    "sri": "65498bddf8bd10ca1328ed83",
     "ant": "65498c25f8bd10ca1328ed85",
-    "supa": "65556093f8bd10ca1328ef2c",
-    "senescyt": "654e575cf8bd10ca1328ee31",
-    "min_educacion": "6557d002f8bd10ca1328f063",
     "expel": "655ed326f8bd10ca1328f49a",
-    "min_interior": "655ff325f8bd10ca1328f50e",
     "fis_gen_estado": "65613d03f8bd10ca1328f528",
+    "min_educacion": "6557d002f8bd10ca1328f063",
+    "min_interior": "655ff325f8bd10ca1328f50e",
+    "senescyt": "654e575cf8bd10ca1328ee31",
+    "sri": "65498bddf8bd10ca1328ed83",
+    "supa": "65556093f8bd10ca1328ef2c",
 }
 
 
@@ -115,10 +115,10 @@ async def fill_scrapper_model(scrapper_task: ScrapperTaskModel):
     """
     data = await get_scrapper_data(scrapper_task.id)
 
-    DataModel = DATA_MODELS.get(scrapper_task.type)
+    DataSchema = schemas.get(scrapper_task.type)
 
     for item in data:
-        scrapper_task.data.append(DataModel(**item))
+        scrapper_task.data.append(DataSchema(**item))
 
 
 if __name__ == "__main__":

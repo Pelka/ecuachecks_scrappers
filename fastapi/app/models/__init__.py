@@ -1,2 +1,2 @@
-from .scrapper_data_models import *
-from .tasks_models import *
+from .scrapper_schemas import *
+from .task_schemas import *
