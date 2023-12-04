@@ -1,8 +1,10 @@
 import os
 from dotenv import load_dotenv
-from models import ScrapperTaskModel, schemas
 
 import httpx
+
+from api.app.data_blueprints.schemas import Query, Record
+from data_blueprints.scrapper_schemas import SCRAPPER_SCHEMAS as schemas
 
 load_dotenv()
 
@@ -74,10 +76,10 @@ async def run_scrapper(scrapper: str, id_number: str):
 
     res = await post_data(f"spiders/{scp_id}/run", payload)
 
-    return ScrapperTaskModel(id=res["data"][0], type=scrapper, status="running")
+    return Query(id=res["data"][0], type=scrapper, status="running")
 
 
-async def update_scrapper_status(scrapper_task: ScrapperTaskModel):
+async def update_scrapper_status(scrapper_task: Record):
     """
     Update the status of a given scraping task.
 
@@ -109,7 +111,7 @@ async def get_scrapper_data(task_id: str):
     return res["data"]
 
 
-async def fill_scrapper_model(scrapper_task: ScrapperTaskModel):
+async def fill_scrapper_model(scrapper_task: Record):
     """
     Fill a model using the data from the Crawlab API.
     """
