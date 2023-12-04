@@ -1,5 +1,4 @@
-from ant.items import AntItem
-from scrapy.exceptions import CloseSpider
+from ant.items import AntItem, NotFoundItem
 
 from scrapy import Request, Spider
 
@@ -25,44 +24,30 @@ class AntSpider(Spider):
 
     def parse(self, response, **kwargs):
         if response.xpath('//td[contains(text(),"LICENCIA TIPO")]/text()'):
-            for record in response.xpath(
-                '//td[contains(text(),"LICENCIA TIPO")]/text()'
-            ):
+            for record in response.xpath('//td[contains(text(),"LICENCIA TIPO")]/text()'):
                 ant_item = AntItem()
 
-                ant_item["full_name"] = (
-                    response
-                    .css("table.MarcoTitulo tr td::text")
-                    .get("")
+                ant_item["full_name"] = response.css("table.MarcoTitulo tr td::text").get(
+                    ""
                 )
-                ant_item["cedula"] = (
-                    response
-                    .xpath('//td[contains(text(),"CED")]/text()')
+                ant_item["id_number"] = (
+                    response.xpath('//td[contains(text(),"CED")]/text()')
                     .get("")
                     .split("-")[-1]
                     .strip()
                 )
                 ant_item["license_type"] = (
-                    record.root
-                    .split('/')[0]
-                    .split(':')[-1]
-                    .split('&')[0].strip()
+                    record.root.split("/")[0].split(":")[-1].split("&")[0].strip()
                 )
-                ant_item["expedition_date"] = (
-                    record.root
-                    .split("VALIDEZ:")[-1]
-                    .split(" - ")[0]
-                )
-                ant_item["expiration_date"] = (
-                    record.root
-                    .split("VALIDEZ:")[-1]
-                    .split(" - ")[-1]
-                )
-                ant_item["points"] = (
-                    response
-                    .xpath('//td[div[contains(text(),"Puntos")]]/following-sibling::td[1]/text()')
-                    .get("")
-                )
+                ant_item["expedition_date"] = record.root.split("VALIDEZ:")[-1].split(
+                    " - "
+                )[0]
+                ant_item["expiration_date"] = record.root.split("VALIDEZ:")[-1].split(
+                    " - "
+                )[-1]
+                ant_item["points"] = response.xpath(
+                    '//td[div[contains(text(),"Puntos")]]/following-sibling::td[1]/text()'
+                ).get("")
                 ant_item["total"] = ""
 
                 url = "https://consultaweb.ant.gob.ec/PortalWEB/paginas/clientes/clp_estado_cuenta.jsp?ps_persona=738673&ps_id_contrato=&ps_opcion=P&ps_placa=&ps_identificacion={}&ps_tipo_identificacion=CED"
@@ -74,13 +59,16 @@ class AntSpider(Spider):
                     dont_filter=True,
                 )
         else:
-            raise CloseSpider("not found")
+            item = NotFoundItem()
+            item["message"] = "No records were found"
+            yield item
 
     def total_value(self, response):
         item = response.meta["item"]
         item["total"] = (
-            response
-            .xpath('//td[font[contains(text(),"TOTAL:")]]/following-sibling::td[1]/font/text()')
+            response.xpath(
+                '//td[font[contains(text(),"TOTAL:")]]/following-sibling::td[1]/font/text()'
+            )
             .get("")
             .strip()
         )
