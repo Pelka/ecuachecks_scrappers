@@ -119,33 +119,3 @@ async def fill_scrapper_model(scrapper_task: ScrapperTaskModel):
 
     for item in data:
         scrapper_task.data.append(DataSchema(**item))
-
-
-if __name__ == "__main__":
-    import asyncio
-    from pprint import pprint
-    from models import GlobalTaskModel
-
-    async def main():
-        # task = GlobalTaskModel(
-        #     id="1",
-        #     status="running",
-        #     total_subtasks=0,
-        #     remaining_subtasks=0,
-        #     subtasks=[
-        #         ScrapperTaskModel(
-        #             id="65682e6bf8bd10ca1328f708",
-        #             type="min_interior",
-        #             status="running",
-        #         )
-        #     ],
-        # )
-
-        print(await run_scrapper("min_interior", "1718863689"))
-        # print(await update_scrapper_status("656814c1f8bd10ca1328f6f6"))
-        # pprint(await get_scrapper_data("65682e6bf8bd10ca1328f708"))
-
-        # await fill_scrapper_model(task.subtasks[0])
-        # pprint(task.subtasks[0].model_dump())
-
-    asyncio.run(main())

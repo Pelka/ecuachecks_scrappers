@@ -91,8 +91,8 @@ class SUPA(BaseModel):
     n_other_debts: int
     current_payment: Decimal
     subtotal_alimony_payments: Decimal
-    subtotal_alimony_interest: Decimal
-    total_alimony_payint: Decimal
+    subtotal_alimony_taxes: Decimal
+    total_alimony_paytax: Decimal
     total_other_debts: Decimal
     total: Decimal
 
@@ -124,7 +124,7 @@ class SenescytDegree(BaseModel):
     title: str
     college: str
     type: str
-    recognized: str
+    recognized_by: str
     register_num: str
     register_date: datetime
     area: str
@@ -157,7 +157,7 @@ class Senescyt(BaseModel):
 
 
 # --> Fiscalia General del Estado Involved
-class FiscaliaGeneralInvolved(BaseModel):
+class FiscaliaEstadoInvolved(BaseModel):
     id_number: str
     full_name: str
     status: str
@@ -168,7 +168,7 @@ class FiscaliaGeneralInvolved(BaseModel):
 
 
 # --> Fiscalia General del Estado
-class FiscaliaGeneral(BaseModel):
+class FiscaliaEstado(BaseModel):
     attorney: str
     no_process: str
     province: str
@@ -177,7 +177,7 @@ class FiscaliaGeneral(BaseModel):
     office: str
     crime: str
     unit: str
-    people: list[FiscaliaGeneralInvolved] = Field(default_factory=list)
+    involveds: list[FiscaliaEstadoInvolved] = Field(default_factory=list)
 
     @validator("date", pre=True)
     def date_to_datetime(cls, value):
@@ -218,7 +218,7 @@ class SuperintendenciaAdmin(BaseModel):
 
 # --> Superintendia Shareholder
 class SuperintendenciaShareholder(BaseModel):
-    effective_possession: str
+    effective_possession: Decimal
     id_file: int
     invested_capital: Decimal
     legal_status: str
@@ -244,7 +244,7 @@ scrapper_schema = {
     "sri": Sri,
     "supa": Superintendencia,
     "senescyt": Senescyt,
-    "fis_gen_estado": FiscaliaGeneral,
+    "fis_gen_estado": FiscaliaEstado,
     "min_educacion": MinEducacion,
     "min_interior": MinInterior,
 }
