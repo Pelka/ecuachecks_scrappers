@@ -1,6 +1,10 @@
 from scrapy import Item, Field
 
 
+class NotFoundItem(Item):
+    message = Field()
+
+
 # --- Sri item
 class SriItem(Item):
     full_name = Field()
