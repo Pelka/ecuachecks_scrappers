@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 import httpx
 
-from api.app.data_blueprints.schemas import Query, Record
+from api.app.data_desing.schemas import Query, Record
 from data_blueprints.scrapper_schemas import SCRAPPER_SCHEMAS as schemas
 
 load_dotenv()

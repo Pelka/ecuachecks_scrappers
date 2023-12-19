@@ -1,3 +1,3 @@
-__all__ = ["crud", "Base"]
+__all__ = ["crud", "database"]
 
-from . import Base, crud
+from . import crud, database

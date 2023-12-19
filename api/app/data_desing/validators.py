@@ -19,9 +19,9 @@ class CleaningValidators:
     CapitalizedPhrase = Annotated[
         str, BeforeValidator(lambda v: " ".join([w.capitalize() for w in v.split(" ")]))
     ]
-    FormatedDate = Annotated[
+    FormattedDate = Annotated[
         datetime, BeforeValidator(lambda v: datetime.strptime(v, "%Y-%m-%d"))
     ]
-    FormatedDatetime = Annotated[
+    FormattedDatetime = Annotated[
         datetime, BeforeValidator(lambda v: datetime.strptime(v, "%Y-%m-%d %H:%M:%S"))
     ]
