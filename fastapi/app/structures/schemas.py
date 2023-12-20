@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 from pydantic.config import ConfigDict
 
 # Validators
-from data_desing.validators import CleaningValidators as cv
+from structures.validators import CleaningValidators as cv
 
 
 # *==== Query Schemas ====*
@@ -285,15 +285,3 @@ class ScraperRecordHandler:
 #     @field_validator("attorney", mode="before")
 #     def split_attorney(cls, value):
 #         return value.split(": ")[1]
-
-
-# AVAIBLE_SCHEMAS = {
-#     # "not_found": NotFound,
-#     "ant": "ant",
-#     "sri": "sri",
-#     # "supa": Superintendencia,
-#     # "senescyt": Senescyt,
-#     # "fis_estado": FiscaliaEstado,
-#     # "min_educacion": MinEducacion,
-#     # "min_interior": MinInterior,
-# }

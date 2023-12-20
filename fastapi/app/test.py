@@ -1,76 +1,52 @@
-def main():
-    from data_desing import models, schemas
+from structures import models, schemas
+from db import crud, database
 
-    record = schemas.ScraperRecordHandler.create(
-        schema_type="ant",
-        data={
-            "id_number": "1234567890",
-            "full_name": "John Doe",
-            "license_type": "A",
-            "expedition_date": "2021-01-01",
-            "expiration_date": "2021-12-31",
-            "points": "10.0",
-            "total": "10.0",
-        },
+from pprint import pprint
+
+
+def main():
+    db = database.SessionLocal()
+
+    records = []
+
+    ant_record = schemas.AntCreate(
+        id_number="1234567890",
+        full_name="John Doe",
+        license_type="A",
+        expedition_date="2020-01-01",
+        expiration_date="2021-01-01",
+        points="10.0",
+        total="100.0",
     )
 
-    print(record.get_schema_type())
+    ant_record_2 = schemas.AntCreate(
+        id_number="1234567890",
+        full_name="John Doe",
+        license_type="B",
+        expedition_date="2020-01-01",
+        expiration_date="2021-01-01",
+        points="10.0",
+        total="100.0",
+    )
 
+    records.append(ant_record)
+    records.append(ant_record_2)
 
-# def main():
-#     new_query = ScraperQuery()
+    scraper_query = schemas.ScraperQueryCreate(status="running")
+    scraper_result = schemas.ScraperResultCreate(type="ant")
+    # scraper_result_2 = schemas.ScraperResultCreate(type="ant")
 
-#     new_query.status = "pending"
-#     new_query.creation_date = datetime.now()
-#     new_query.expired_date = datetime.now() + timedelta(days=7)
+    res_scp_query = crud.create_scp_query(db, scraper_query)
+    res_scp_result = crud.create_scp_result(db, scraper_result, res_scp_query.id)
+    # res_scp_result_2 = crud.create_scp_result(db, scraper_result_2, res_scp_query.id)
 
-#     new_result = ScraperResult()
-#     new_result.type = "ant"
-#     new_result.status = "running"
+    results = crud.get_scp_results_by_query_id(db, res_scp_query.id)
 
-#     new_record = MinInterior()
-#     new_record.full_name = "John Doe"
-#     new_record.id_number = "1234567890"
-#     new_record.doc_type = "Nacional"
-#     new_record.background = False
-#     new_record.certificate = "www.google.com"
+    # # res_scp_records = [
+    # #     crud.create_scraper_record(db, record, res_scp_result.id) for record in records
+    # # ]
 
-#     new_record2 = Sri()
-#     new_record2.id_number = "1234567890"
-#     new_record2.full_name = "John Doe"
-#     new_record2.message = "test message"
-#     new_record2.firm_debts = 0.0
-#     new_record2.disputed_debts = 0.0
-#     new_record2.payment_facilities = 0.0
-
-#     new_record3 = Senescyt()
-#     new_record3.id_number = "1234567890"
-#     new_record3.full_name = "John Doe"
-#     new_record3.gender = True
-#     new_record3.nationality = "ECUATORIANA"
-
-#     sub_record = SenescytDegree()
-#     sub_record.title = "Ingeniero en Sistemas"
-#     sub_record.college = "Universidad de Cuenca"
-#     sub_record.type = "PREGRADO"
-#     sub_record.recognized_by = "Test Recognized By"
-#     sub_record.register_num = "123"
-#     sub_record.register_date = datetime.now()
-#     sub_record.area = "Test Area"
-#     sub_record.note = "Test Note"
-
-#     new_query.results.append(new_result)
-#     new_record.result = new_result
-#     new_record2.result = new_result
-
-#     new_record3.degrees.append(sub_record)
-#     new_record3.result = new_result
-
-#     with SessionLocal.begin() as session:
-#         session.add_all(
-#             [new_query, new_result, new_record, new_record2, new_record3, sub_record]
-#         )
-#         session.commit()
+    pprint(results)
 
 
 if __name__ == "__main__":
