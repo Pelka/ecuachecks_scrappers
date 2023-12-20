@@ -50,6 +50,7 @@ class ScraperResultCreate(ScraperResultBase):
 class ScraperResult(ScraperResultBase):
     id: UUID
     query_id: UUID
+    records: Optional[list] = Field(default_factory=list)
 
     class Config:
         from_atrributes = True

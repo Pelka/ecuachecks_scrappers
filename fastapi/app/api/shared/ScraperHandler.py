@@ -7,11 +7,11 @@ from uuid import UUID
 import asyncio
 
 
-class ScraperHanlder:
+class ScraperHandler:
     def __init__(self) -> None:
         self.db = SessionLocal()
 
-    async def start_qscp(self, scraper_targets: list[str], id_number: str):
+    async def start_task(self, scraper_targets: list[str], id_number: str):
         scraper_query = crud.create_scp_query(self.db, schemas.ScraperQueryCreate(status="running"))
 
         cwlb_call = [
@@ -30,7 +30,7 @@ class ScraperHanlder:
 
         return scraper_query
 
-    async def update_qscp_result_status(self, query_id: UUID):
+    async def update_status(self, query_id: UUID):
         async def update_finished_result(result: schemas.ScraperResult):
             new_status = await crawlab_api.get_scraper_status(result.crawlab_id)
             if new_status in ["finished", "error"]:
@@ -42,26 +42,50 @@ class ScraperHanlder:
         cwlb_call = [asyncio.create_task(update_finished_result(result)) for result in results]
         cwlb_res = await asyncio.gather(*cwlb_call)
 
-        updated_results = list(filter(lambda item: item is not None, cwlb_res))
+        updated_results = list(filter(None, cwlb_res))
 
         for result in updated_results:
             crud.update_scp_result(self.db, result.id, status=result.status)
 
         return updated_results
 
-    async def retrieve_records_data(self, cwlb_id: str, scraper_type: str, result_id: UUID):
-        cwlb_records = await crawlab_api.get_scraper_data(cwlb_id)
+    async def retrieve_data(self, crawlab_id: str, scraper_type: str, result_id: UUID):
+        cwlb_records = await crawlab_api.get_scraper_data(crawlab_id)
 
-        if cwlb_records is None:
-            return None
+        if cwlb_records:
+            records = [
+                crud.create_scp_record(
+                    db=self.db,
+                    record=schemas.ScraperRecordHandler.create(scraper_type, record),
+                    result_id=result_id,
+                )
+                for record in cwlb_records
+            ]
 
-        records = [
-            crud.create_scp_record(
-                db=self.db,
-                record=schemas.ScraperRecordHandler.create(scraper_type, record),
-                result_id=result_id,
-            )
-            for record in cwlb_records
-        ]
+            return records
 
-        return records
+    async def run_observer(self, query_id: UUID):
+        total_results = len(crud.get_scp_results_by_query_id(self.db, query_id))
+
+        while total_results > 0:
+            completed_results = await self.update_status(query_id)
+            n_completed = len(completed_results)
+
+            if n_completed > 0:
+                for result in completed_results:
+                    records = await self.retrieve_data(
+                        crawlab_id=result.crawlab_id, scraper_type=result.type, result_id=result.id
+                    )
+
+                    if not records:
+                        result = crud.update_scp_result(
+                            db=self.db, result_id=result.id, message="No records were found"
+                        )
+                    else:
+                        result.records = records
+
+                    yield result
+
+                total_results -= n_completed
+
+        crud.update_scp_query(self.db, query_id, status="finished")

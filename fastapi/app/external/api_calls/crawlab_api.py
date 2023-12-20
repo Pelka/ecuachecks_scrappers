@@ -87,13 +87,15 @@ async def get_scraper_status(scraper_cwlb_id: str):
     return res["data"]["status"]
 
 
-async def get_scraper_data(scraper_cwlb_id: str) -> list[dict]:
+async def get_scraper_data(scraper_cwlb_id: str) -> list[dict] | None:
     res = await get_data(f"tasks/{scraper_cwlb_id}/data")
     data = res["data"]
-    for record in data:
-        record.pop("_id")
-        record.pop("_tid")
-    return data
+
+    if data is not None:
+        for record in data:
+            record.pop("_id")
+            record.pop("_tid")
+        return data
 
 
 # async def update_scraper_status(scraper_task: Record):
