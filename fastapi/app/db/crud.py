@@ -5,6 +5,7 @@ from uuid import UUID
 from structures import models, schemas
 
 
+# *==== Generic CRUD ====*
 def create(db: Session, model: object, schema: BaseModel, **kwargs):
     try:
         db_obj = model(**schema.model_dump(), **kwargs)
@@ -59,6 +60,16 @@ def get_scp_result(db: Session, result_id: UUID):
 def get_scp_results_by_query_id(db: Session, query_id: UUID):
     db_results = (
         db.query(models.ScraperResult).filter(models.ScraperResult.query_id == query_id).all()
+    )
+    return [schemas.ScraperResult.model_validate(result.__dict__) for result in db_results]
+
+
+def get_scp_results_by_status(db: Session, result_id: UUID, status: str):
+    db_results = (
+        db.query(models.ScraperResult)
+        .filter(models.ScraperResult.query_id == result_id)
+        .filter(models.ScraperResult.status == status)
+        .all()
     )
     return [schemas.ScraperResult.model_validate(result.__dict__) for result in db_results]
 

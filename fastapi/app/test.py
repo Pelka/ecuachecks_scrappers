@@ -12,14 +12,19 @@ from external.api_calls import crawlab_api
 
 def main():
     handler = ScraperHanlder()
-    # db = database.SessionLocal()
-    # update = crud.update_scp_query(
-    #     db=db, query_id=UUID("f480de7ae0894501a917c6ef40594b60"), status="error"
-    # )
+    db = database.SessionLocal()
 
-    # print(update)
-
-    pprint(run(handler.start_scrapers(["ant", "sri"], "1721194593")))
+    # pprint(run(handler.start_qscp(["ant"], "1725514119")))
+    # pprint(run(handler.update_qscp_result_status(UUID("862a35213d304a9fa23920dad0311ef7"))))
+    pprint(
+        run(
+            handler.retrieve_records_data(
+                cwlb_id="65834345f8bd10ca1328f748",
+                scraper_type="ant",
+                result_id=UUID("0adba15b-16a7-4fda-8e5e-8229d9719bdb"),
+            )
+        )
+    )
 
 
 if __name__ == "__main__":

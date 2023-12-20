@@ -89,8 +89,8 @@ class AntBase(ScraperRecordBase):
 
 
 class AntCreate(AntBase):
-    expedition_date: cv.FormattedDate
-    expiration_date: cv.FormattedDate
+    expedition_date: cv.FormattedDatetime
+    expiration_date: cv.FormattedDatetime
     points: cv.StrToFloat
     total: cv.StrToFloat
 
@@ -156,8 +156,10 @@ class ScraperRecordHandler:
     def create(cls, schema_type: str, data: dict):
         schema = cls.get_base(schema_type)
 
-        if list(data.keys()) != list(schema.model_fields.keys()):
-            raise ValueError(f"Provided data has invalid fields: {data.keys()}")
+        if data.keys() != schema.model_fields.keys():
+            raise ValueError(
+                f"Provided data has invalid fields \n {data.keys()} \n {list(schema.model_fields.keys())}"
+            )
 
         c_schema = cls.c_schemas.get(schema_type)
         return c_schema(**data)
