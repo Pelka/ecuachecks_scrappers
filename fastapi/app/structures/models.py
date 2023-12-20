@@ -41,6 +41,7 @@ class ScraperQuery(Base):
 
 
 class ScraperResult(Base):
+    crawlab_id = Column(String)
     type = Column(String, nullable=False)
     status = Column(String)
     message = Column(String, nullable=True, default=None)

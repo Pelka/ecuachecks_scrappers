@@ -24,13 +24,12 @@ class ScraperQueryBase(BaseModel):
 
 class ScraperQueryCreate(ScraperQueryBase):
     creation_date: datetime = Field(default_factory=datetime.now)
-    expired_date: datetime = Field(
-        default_factory=lambda: datetime.now() + timedelta(days=7)
-    )
+    expired_date: datetime = Field(default_factory=lambda: datetime.now() + timedelta(days=7))
 
 
 class ScraperQuery(ScraperQueryBase):
     id: UUID
+    results: Optional[list] = Field(default_factory=list)
 
     class Config:
         from_atrributes = True
@@ -38,8 +37,9 @@ class ScraperQuery(ScraperQueryBase):
 
 # --> Scraper Result
 class ScraperResultBase(BaseModel):
+    crawlab_id: str
     type: str
-    status: str = Field(default="running")
+    status: str
     message: Optional[str] = Field(default=None)
 
 

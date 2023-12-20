@@ -4,52 +4,22 @@ from db import crud, database
 from pprint import pprint
 from uuid import UUID
 
+from api.shared.ScraperHandler import ScraperHanlder
+from asyncio import run
+
+from external.api_calls import crawlab_api
+
 
 def main():
-    db = database.SessionLocal()
+    handler = ScraperHanlder()
+    # db = database.SessionLocal()
+    # update = crud.update_scp_query(
+    #     db=db, query_id=UUID("f480de7ae0894501a917c6ef40594b60"), status="error"
+    # )
 
-    records = []
+    # print(update)
 
-    ant_record = schemas.AntCreate(
-        id_number="1234567890",
-        full_name="John Doe",
-        license_type="A",
-        expedition_date="2020-01-01",
-        expiration_date="2021-01-01",
-        points="10.0",
-        total="100.0",
-    )
-
-    ant_record_2 = schemas.AntCreate(
-        id_number="1234567890",
-        full_name="John Doe",
-        license_type="B",
-        expedition_date="2020-01-01",
-        expiration_date="2021-01-01",
-        points="10.0",
-        total="100.0",
-    )
-
-    # records.append(ant_record)
-    # records.append(ant_record_2)
-
-    # scraper_query = schemas.ScraperQueryCreate(status="running")
-    # scraper_result = schemas.ScraperResultCreate(type="ant")
-    # # scraper_result_2 = schemas.ScraperResultCreate(type="ant")
-
-    # res_scp_query = crud.create_scp_query(db, scraper_query)
-    # res_scp_result = crud.create_scp_result(db, scraper_result, res_scp_query.id)
-    # # res_scp_result_2 = crud.create_scp_result(db, scraper_result_2, res_scp_query.id)
-
-    # results = crud.get_scp_results_by_query_id(db, res_scp_query.id)
-
-    # res_scp_records = [
-    #     crud.create_scraper_record(db, record, res_scp_result.id) for record in records
-    # ]
-
-    record = crud.get_scp_record(db, UUID("080ad23f5829410e98c1c785fb017211"), "ant")
-
-    pprint(record)
+    pprint(run(handler.start_scrapers(["ant", "sri"], "1721194593")))
 
 
 if __name__ == "__main__":

@@ -5,32 +5,49 @@ from uuid import UUID
 from structures import models, schemas
 
 
-def save_obj(db: Session, obj, multy=False):
-    if multy:
-        db.add_all(obj)
-    else:
-        db.add(obj)
-    db.commit()
-    db.refresh(obj)
-    return obj
+def create(db: Session, model: object, schema: BaseModel, **kwargs):
+    try:
+        db_obj = model(**schema.model_dump(), **kwargs)
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+    except:
+        db.rollback()
+        raise Exception(f"Error creating object: {model.__name__}")
+
+    return db_obj
+
+
+def update(db: Session, model: object, obj_id: UUID, **kwargs):
+    try:
+        db_obj = db.query(model).filter(model.id == obj_id).update(kwargs)
+        db.commit()
+    except:
+        db.rollback()
+        raise Exception(f"Error updating object: {model.__name__}")
+
+    return db_obj
 
 
 # *==== Query CRUD ====*
 def create_scp_query(db: Session, query: schemas.ScraperQueryCreate):
-    db_query = models.ScraperQuery(**query.model_dump())
-    save_obj(db, db_query)
+    db_query = create(db=db, model=models.ScraperQuery, schema=query)
     return schemas.ScraperQuery.model_validate(db_query.__dict__)
 
 
 def get_scp_query(db: Session, query_id: UUID):
     db_query = db.query(models.ScraperQuery).filter(models.ScraperQuery.id == query_id).first()
-    return schemas.ScraperQuery.model_fields(db_query.__dict__)
+    return schemas.ScraperQuery.model_validate(db_query.__dict__)
+
+
+def update_scp_query(db: Session, query_id: UUID, **kwargs):
+    update(db=db, model=models.ScraperQuery, obj_id=query_id, **kwargs)
+    return get_scp_query(db=db, query_id=query_id)
 
 
 # *==== Result CRUD ====*
 def create_scp_result(db: Session, result: schemas.ScraperResultCreate, query_id: UUID):
-    db_result = models.ScraperResult(**result.model_dump(), query_id=query_id)
-    save_obj(db, db_result)
+    db_result = create(db=db, model=models.ScraperResult, schema=result, query_id=query_id)
     return schemas.ScraperResult.model_validate(db_result.__dict__)
 
 
@@ -46,14 +63,21 @@ def get_scp_results_by_query_id(db: Session, query_id: UUID):
     return [schemas.ScraperResult.model_validate(result.__dict__) for result in db_results]
 
 
+def update_scp_result(db: Session, result_id: UUID, **kwargs):
+    update(db=db, model=models.ScraperResult, obj_id=result_id, **kwargs)
+    return get_scp_result(db=db, result_id=result_id)
+
+
 # *==== Record CRUD ====*
 def create_scp_record(db: Session, record: schemas.ScraperRecordBase, result_id: UUID):
     schema_type = record.get_schema_type()
-    model = models.ScraperRecordHandler.get_model(schema_type)
-    db_record = model(**record.model_dump(), result_id=result_id)
-    schema = schemas.ScraperRecordHandler.get(schema_type)
-    save_obj(db, db_record)
-    return schema.model_validate(db_record.__dict__)
+    db_record = create(
+        db=db,
+        model=models.ScraperRecordHandler.get_model(schema_type),
+        schema=record,
+        result_id=result_id,
+    )
+    return schemas.ScraperRecordHandler.get(schema_type).model_validate(db_record.__dict__)
 
 
 def get_scp_record(db: Session, record_id: UUID, record_type: str):

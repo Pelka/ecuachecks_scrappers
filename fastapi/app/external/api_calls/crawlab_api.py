@@ -53,7 +53,7 @@ async def post_data(target_url: str, data: dict | None = None):
             print(e)
 
 
-async def run_scraper(scraper_target: str, id_number: str):
+async def run_scraper(scraper_target: str, id_number: str) -> dict[str, str]:
     """
     Initiates a scraping task for a given target.
 
@@ -72,10 +72,17 @@ async def run_scraper(scraper_target: str, id_number: str):
     else:
         payload = {"param": f"--search_id {id_number}"}
 
-    return await post_data(f"spiders/{target_id}/run", payload)
+    res = await post_data(f"spiders/{target_id}/run", payload)
+
+    return {
+        "type": scraper_target,
+        "crawlab_id": res["data"][0],
+        "status": "running" if res["message"] == "success" else "error",
+        "message": res["error"],
+    }
 
 
-async def call_get_scraper_status(scraper_cwlb_id: str):
+async def get_scraper_status(scraper_cwlb_id: str):
     res = await get_data(f"tasks/{scraper_cwlb_id}")
     return res["data"]["status"]
 
