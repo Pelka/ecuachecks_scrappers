@@ -1,8 +1,9 @@
 from copy import deepcopy
 from scrapy import Spider, Request
 from twocaptcha import TwoCaptcha
+from scrapy.exceptions import CloseSpider
 
-from sri.items import SriItem, NotFoundItem
+from sri.items import SriItem
 
 
 class SriSpider(Spider):
@@ -50,9 +51,7 @@ class SriSpider(Spider):
 
     def start_requests(self):
         detail_url = "https://srienlinea.sri.gob.ec/sri-captcha-servicio-internet/rest/ValidacionCaptcha/validarGoogleReCaptcha?googleCaptchaResponse={}&emitirToken=true"
-        yield Request(
-            detail_url.format(self.code), callback=self.get_token, headers=self.headers
-        )
+        yield Request(detail_url.format(self.code), callback=self.get_token, headers=self.headers)
 
     def get_token(self, response):
         data = response.json()
@@ -76,16 +75,14 @@ class SriSpider(Spider):
                 meta=response.meta,
             )
         elif response.status == 400:
-            item = NotFoundItem()
-            item["message"] = "No records were found"
-            yield item
+            raise CloseSpider("Not Found Data")
         else:
             data = response.json()
 
             sri_item = SriItem()
 
             sri_item["full_name"] = data.get("nombreCompleto", "")
-            sri_item["cedula"] = data.get("identificacion", "")
+            sri_item["id_number"] = data.get("identificacion", "")
             sri_item["message"] = ""
             sri_item["firm_debts"] = "0"
             sri_item["disputed_debts"] = "0"

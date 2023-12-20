@@ -1,11 +1,6 @@
 from scrapy import Item, Field
 
 
-# --- Not found item
-class NotFoundItem(Item):
-    message = Field()
-
-
 # --- ANT item
 class AntItem(Item):
     id_number = Field()

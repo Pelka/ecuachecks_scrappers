@@ -9,18 +9,14 @@ from ant.items import AntItem
 
 
 # process fields
-def process_fields(
-    item_adapter: ItemAdapter, fields_key: list[str], func: any, *args, **kwargs
-):
+def process_fields(item_adapter: ItemAdapter, fields_key: list[str], func: any, *args, **kwargs):
     for field_key in fields_key:
         value = item_adapter.get(field_key)
         if value is not None:
             item_adapter[field_key] = func(value, *args, **kwargs)
 
 
-def string_to_float(
-    value: str, non_numeric: bool = False, splited_by_comma: bool = False
-):
+def string_to_float(value: str, non_numeric: bool = False, splited_by_comma: bool = False):
     if splited_by_comma:
         splited_value = splited_value = value.split(",")
         value = ".".join(splited_value)
@@ -49,26 +45,25 @@ def strip_white_spaces(item_adapter: ItemAdapter):
 
 class PreprocesDataPipeline:
     def process_item(self, item, spider):
-        if isinstance(item, AntItem):
-            adapter = ItemAdapter(item)
+        adapter = ItemAdapter(item)
 
-            # Strip all white spaces from strings
-            strip_white_spaces(adapter)
+        # Strip all white spaces from strings
+        strip_white_spaces(adapter)
 
-            # Expedition & Expiration dates --> timestamp
-            process_fields(
-                item_adapter=adapter,
-                fields_key=["expedition_date", "expiration_date"],
-                func=string_to_timestamp,
-                format_string="%d-%m-%Y",
-            )
+        # Expedition & Expiration dates --> timestamp
+        process_fields(
+            item_adapter=adapter,
+            fields_key=["expedition_date", "expiration_date"],
+            func=string_to_timestamp,
+            format_string="%d-%m-%Y",
+        )
 
-            # Points & Total --> float
-            process_fields(
-                item_adapter=adapter,
-                fields_key=["points", "total"],
-                func=string_to_float,
-                splited_by_comma=True,
-            )
+        # Points & Total --> float
+        process_fields(
+            item_adapter=adapter,
+            fields_key=["points", "total"],
+            func=string_to_float,
+            splited_by_comma=True,
+        )
 
         return item

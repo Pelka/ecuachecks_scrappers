@@ -1,5 +1,5 @@
-from ant.items import AntItem, NotFoundItem
-
+from ant.items import AntItem
+from scrapy.exceptions import CloseSpider
 from scrapy import Request, Spider
 
 
@@ -27,9 +27,7 @@ class AntSpider(Spider):
             for record in response.xpath('//td[contains(text(),"LICENCIA TIPO")]/text()'):
                 ant_item = AntItem()
 
-                ant_item["full_name"] = response.css("table.MarcoTitulo tr td::text").get(
-                    ""
-                )
+                ant_item["full_name"] = response.css("table.MarcoTitulo tr td::text").get("")
                 ant_item["id_number"] = (
                     response.xpath('//td[contains(text(),"CED")]/text()')
                     .get("")
@@ -39,12 +37,8 @@ class AntSpider(Spider):
                 ant_item["license_type"] = (
                     record.root.split("/")[0].split(":")[-1].split("&")[0].strip()
                 )
-                ant_item["expedition_date"] = record.root.split("VALIDEZ:")[-1].split(
-                    " - "
-                )[0]
-                ant_item["expiration_date"] = record.root.split("VALIDEZ:")[-1].split(
-                    " - "
-                )[-1]
+                ant_item["expedition_date"] = record.root.split("VALIDEZ:")[-1].split(" - ")[0]
+                ant_item["expiration_date"] = record.root.split("VALIDEZ:")[-1].split(" - ")[-1]
                 ant_item["points"] = response.xpath(
                     '//td[div[contains(text(),"Puntos")]]/following-sibling::td[1]/text()'
                 ).get("")
@@ -59,9 +53,7 @@ class AntSpider(Spider):
                     dont_filter=True,
                 )
         else:
-            item = NotFoundItem()
-            item["message"] = "No records were found"
-            yield item
+            raise CloseSpider("Not Found Data")
 
     def total_value(self, response):
         item = response.meta["item"]
