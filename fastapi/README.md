@@ -1,6 +1,6 @@
 # Ecuachecks API
 
-This is a basic API built with FastAPI. It includes features such as calling an external API, user authentication, and WebSocket connections.
+API for app ecuachecks
 
 ## Installation
 
@@ -9,10 +9,8 @@ This is a basic API built with FastAPI. It includes features such as calling an 
 3. Set the necessary environment variables in the `.env` file.
 
 ## Usage
-The API has the following endpoints:
+Avaible endpoints
 
-- `/api/external`: Calls an external API and returns the response.
-- `/api/auth/login`: Authenticates a user.
-- `/api/auth/logout`: Logs out a user.
-- `/ws`: Accepts WebSocket connections.
+### Websockets
 
+- ./webscokets/scrapers
