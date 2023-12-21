@@ -4,14 +4,14 @@ from db import crud, database
 from pprint import pprint
 from uuid import UUID
 
-from api.shared.ScraperHandler import ScraperHanlder
+from api.shared.ScraperHandler import ScraperHandler
 from asyncio import run
 
 from external.api_calls import crawlab_api
 
 
 def main():
-    handler = ScraperHanlder()
+    handler = ScraperHandler()
     db = database.SessionLocal()
 
     scraper_query = run(handler.start_task(["ant", "sri"], "1725514119"))

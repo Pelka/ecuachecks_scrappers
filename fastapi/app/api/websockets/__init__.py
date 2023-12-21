@@ -1,3 +1,3 @@
-__all__ = ["ws_router"]
+__all__ = ["router"]
 
-from .sockets import router as ws_router
+from .router import Router as WebSocketsRouter

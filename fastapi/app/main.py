@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.sockets import ws_router
+from api.websockets import WebSocketsRouter
 
 app = FastAPI()
-app.include_router(ws_router)
+app.include_router(WebSocketsRouter)
 
 origins = [
     "http://localhost:8088",

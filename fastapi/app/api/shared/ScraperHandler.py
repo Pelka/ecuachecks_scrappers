@@ -1,5 +1,6 @@
 from db import crud
 from db.database import SessionLocal
+from sqlalchemy.orm import Session
 from structures import schemas
 from external.api_calls import crawlab_api
 from uuid import UUID
@@ -8,10 +9,16 @@ import asyncio
 
 
 class ScraperHandler:
-    def __init__(self) -> None:
-        self.db = SessionLocal()
+    def __init__(self, db: Session) -> None:
+        self.db = db
 
     async def start_task(self, scraper_targets: list[str], id_number: str):
+        for target in scraper_targets:
+            if not schemas.ScraperRecordHandler._validate_schema(
+                target, schemas.ScraperRecordHandler.b_schemas
+            ):
+                raise ValueError(f"Scraper type {target} is not supported")
+
         scraper_query = crud.create_scp_query(self.db, schemas.ScraperQueryCreate(status="running"))
 
         cwlb_call = [
